@@ -39,8 +39,7 @@ import GHC.Generics (Generic)
 import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox)
 import qualified Test.WebDriver as WD
 import qualified Test.WebDriver.Commands as WDC
-import Test.WebDriver.Config (mkSession)
-import Test.WebDriver.Session (WDSession (..))
+import Test.WebDriver.Session (WDSession (..), getSession)
 
 -- | Browser type enumeration
 data Browser = Chrome | Firefox
@@ -109,8 +108,8 @@ createWebDriverConfig browserType opts =
       chromeOpts = case arguments opts of
         Just args ->
           ["--" ++ T.unpack arg | arg <- args]
-            ++ ["--headless" | headless opts == Just True]
-        Nothing -> ["--headless" | headless opts == Just True]
+            ++ ["--headless=new" | headless opts == Just True]
+        Nothing -> ["--headless=new" | headless opts == Just True]
    in case browserType of
         Chrome ->
           configWithHost
@@ -129,8 +128,7 @@ createWebDriverConfig browserType opts =
 initializeSession :: Browser -> BrowserOptions -> IO SeleniumSession
 initializeSession browserType opts = do
   let config = createWebDriverConfig browserType opts
-  -- Create a session using mkSession
-  session <- mkSession config
+  session <- WD.runSession config getSession
   return $ SeleniumSession browserType session
 
 -- | Close the WebDriver session

@@ -86,12 +86,12 @@ class MCPSeleniumClient:
         """Start a browser session"""
         options = {
             "headless": headless,
-            "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
+            "arguments": []
         }
 
         return await self.call_tool("start_browser", {
             "browser": browser,
-            "opts": options,
+            "options": options,
             "enableLogging": True
         })
 

@@ -134,20 +134,6 @@ startBrowserTool =
               }
             }
           },
-          "opts": {
-            "type": "object",
-            "properties": {
-              "headless": {
-                "type": "boolean",
-                "description": "Run browser in headless mode"
-              },
-              "arguments": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Additional browser arguments"
-              }
-            }
-          },
           "enableLogging": {
             "type": "boolean",
             "description": "Enable logging for debugging"

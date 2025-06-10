@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -54,7 +55,6 @@ import System.IO (hFlush, hPutStrLn, stderr)
 data StartBrowserParams = StartBrowserParams
   { browser :: Browser,
     options :: Maybe BrowserOptions,
-    opts :: Maybe BrowserOptions,
     enableLogging :: Maybe Bool
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -172,14 +172,14 @@ errorResult msg =
 
 -- | Handle start_browser tool
 handleStartBrowser :: SeleniumTools -> StartBrowserParams -> IO CallToolResult
-handleStartBrowser tools (StartBrowserParams browserVal optionsVal optsVal _) = do
+handleStartBrowser tools (StartBrowserParams browserVal optionsVal _) = do
   hPutStrLn stderr "HANDLER: start_browser called" >> hFlush stderr
-  let finalOpts = case (optionsVal, optsVal) of
-        (Just o, _) -> o
-        (Nothing, Just o) -> o
-        (Nothing, Nothing) -> BrowserOptions Nothing Nothing
+  let finalOpts = fromMaybe (BrowserOptions Nothing Nothing) optionsVal
   catch
     ( do
+        readTVarIO (sessionVar tools) >>= \case
+          Just oldSession -> closeSeleniumSession oldSession
+          Nothing -> pure ()
         session <- initializeSession browserVal finalOpts
         atomically $ writeTVar (sessionVar tools) (Just session)
         return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
