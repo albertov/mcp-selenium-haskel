@@ -32,7 +32,46 @@ doc = "Accepts the name of a single package as an argument to run their specific
 command = ["./run_hoogle.sh"]
 doc = """
 Use Hoogle to seach symbols in available dependencies.
-You may only search one symbol at a time
+
+Searches
+
+Before explaining the syntax of searches, we first give a list of example
+searches with their meaning:
+
+"map" Search for the text "map"
+"con map" Search for the text "map" and the text "con"
+"a -> a" Search for the type "a -> a"
+":: a -> a" Search for the type "a -> a"
+"a" Search for the text "a"
+":: a" Search for the type "a"
+"id :: a -> a" Search for the text "id" and the type "a -> a"
+Searches can be either textual (a list of words), or by type (a type signature)
+or both. A type search may optionally start with a "::" symbol. A search is
+considered a text search unless it contains a combination of text and symbols,
+or if it starts with (::). To search for both a type and a name, place a ::
+between them, for example "undefined :: a"
+
+Modules: Searches can be restricted to a particular module with +Module.Name, or
+to avoid a module with -Module.Name. The command Module.Name.Foo is treated as
++Module.Name Foo.
+
+Packages: Searches can be restricted to a particular package with +packagename,
+or to avoid a package with -package. By default Hoogle will search a standard
+set of packages.
+
+Command Line Search Flags
+Flags can be specified as --flag or /flag. Flags requiring arguments are
+specified as --flag=arg or /flag=arg. Anything which is not a flag is counted as
+a search query. Because a console will treat -> as a redirection, you can do -#
+to get the right character.
+
+-V, --version Print out version information
+-?, --help Show help on the command line flags
+-v --verbose Verbose mode
+--color Show color output, requires an ANSI compliant terminal, defaults to
+false
+--count=int Maximum number of results to print, defaults to showing all results
+--start=int 1-based index of first result to print, defaults to 1
 """
 
 [commands.lint]
