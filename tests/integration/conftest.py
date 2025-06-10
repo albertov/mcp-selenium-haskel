@@ -16,11 +16,13 @@ from utils.html_server import TestHTMLServer
 
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def mcp_client() -> AsyncGenerator[MCPSeleniumClient, None]:
     """Create MCP client connected to Haskell server"""
     # IMPORTANT: Do not change this!
-    executable_path = "./run_server.sh"
+    # Get the absolute path to run_server.sh relative to the project root
+    project_root = Path(__file__).parent.parent.parent
+    executable_path = str(project_root / "run_server.sh")
     print(f"DEBUG: Using executable: {executable_path}")
 
     async with MCPSeleniumClient(executable_path) as client:
