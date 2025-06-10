@@ -63,7 +63,7 @@ class TestCoreFunctionality:
             "value": "h1",
             "timeout": 10000
         })
-        assert "error" not in result
+        assert result["text"] == "Please log in, young grasshopper"
 
         # Take screenshot
         result = await mcp_client.take_screenshot()

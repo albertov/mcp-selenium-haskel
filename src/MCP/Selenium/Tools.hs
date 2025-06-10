@@ -279,7 +279,7 @@ handleGetElementText tools (GetElementTextParams byVal valueVal timeoutVal) = do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
             elementText <- getElementText session locator timeoutMs
-            return $ successResult $ "Element text: " <> elementText
+            return $ successResult $ elementText
         )
         (\e -> return $ errorResult $ "Get text failed: " <> T.pack (show (e :: SomeException)))
 
