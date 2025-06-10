@@ -17,6 +17,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Optional
+import sys
 
 
 class ServiceManager:
@@ -24,9 +25,7 @@ class ServiceManager:
 
     def __init__(self):
         self.selenium_process: Optional[subprocess.Popen] = None
-        self.http_process: Optional[subprocess.Popen] = None
         self.selenium_port = 4444
-        self.http_port = 8080
 
         # Register cleanup handlers
         atexit.register(self.cleanup)
@@ -67,35 +66,6 @@ class ServiceManager:
             stderr=subprocess.DEVNULL
         )
         return True
-
-    def start_http_server(self):
-        """Start SimpleHTTPServer for test fixtures"""
-        print("Starting HTTP server for test fixtures...")
-
-        try:
-            fixtures_dir = Path("tests/fixtures/html").resolve()
-            if not fixtures_dir.exists():
-                raise FileNotFoundError(f"Fixtures directory not found: {fixtures_dir}")
-
-            # Use Python's built-in HTTP server
-            cmd = [
-                sys.executable, "-m", "http.server", str(self.http_port),
-                "--directory", str(fixtures_dir)
-            ]
-
-            self.http_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-
-            # Wait for HTTP server to start
-            self._wait_for_service("localhost", self.http_port, "HTTP server")
-            print(f"HTTP server started on port {self.http_port}")
-
-        except Exception as e:
-            print(f"Failed to start HTTP server: {e}")
-            raise
 
     def _wait_for_service(self, host: str, port: int, service_name: str, timeout: int = 30):
         """Wait for a service to become available"""
@@ -158,15 +128,6 @@ class ServiceManager:
                 self.selenium_process.kill()
             self.selenium_process = None
 
-        if self.http_process:
-            print("Stopping HTTP server...")
-            self.http_process.terminate()
-            try:
-                self.http_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.http_process.kill()
-            self.http_process = None
-
         print("Cleanup complete")
 
 
@@ -177,7 +138,6 @@ def main():
     try:
         # Start services
         service_manager.start_selenium_server()
-        service_manager.start_http_server()
 
         # Run tests
         exit_code = service_manager.run_tests()

@@ -15,28 +15,12 @@ from utils.mcp_client import MCPSeleniumClient
 from utils.html_server import TestHTMLServer
 
 
-@pytest.fixture(scope="session")
-def mcp_executable_path():
-    """Path to the mcp-selenium-hs executable"""
-    # Look for the executable in the cabal build directory
-    possible_paths = [
-        Path("dist-newstyle/build/x86_64-linux/ghc-9.10.2/mcp-selenium-2.2.0/x/mcp-selenium-hs/build/mcp-selenium-hs/mcp-selenium-hs"),
-        Path("dist-newstyle/build/x86_64-linux/ghc-9.6.7/mcp-selenium-2.2.0/x/mcp-selenium-hs/build/mcp-selenium-hs/mcp-selenium-hs"),
-        # Add more potential paths as needed
-    ]
-
-    for path in possible_paths:
-        if path.exists():
-            return str(path.resolve())
-
-    # Fallback to assuming it's in PATH
-    return "mcp-selenium-hs"
-
 
 @pytest_asyncio.fixture(scope="session")
-async def mcp_client(mcp_executable_path) -> AsyncGenerator[MCPSeleniumClient, None]:
+async def mcp_client() -> AsyncGenerator[MCPSeleniumClient, None]:
     """Create MCP client connected to Haskell server"""
-    async with MCPSeleniumClient(str(mcp_executable_path)) as client:
+    async with MCPSeleniumClient("./run_client.sh") as client:
+        print("DEBUG: Created client")
         yield client
 
 
@@ -45,6 +29,7 @@ async def test_server():
     """Start local HTTP server for test HTML files"""
     server = TestHTMLServer()
     await server.start()
+    print("DEBUG: Started HTTP server")
     yield server
     await server.stop()
 
