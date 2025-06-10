@@ -2,6 +2,10 @@
 
 A Haskell implementation of MCP Selenium Server using WebDriver, enabling browser automation through standardized MCP clients like Claude.
 
+## Credits
+
+This implementation is inspired by the original concept developed by [Angie Jones](https://github.com/angiejones/mcp-selenium). We thank the original contributors for their foundational work in MCP Selenium automation.
+
 ## Features
 
 - Start browser sessions with customizable options
@@ -95,12 +99,12 @@ Integration tests:
 
 Format code:
 ```bash
-cabal run format -- <file.hs>
+nix fmt
 ```
 
-Lint code:
+Check code quality and run linting:
 ```bash
-cabal run lint -- <file.hs>
+nix check
 ```
 
 ## License

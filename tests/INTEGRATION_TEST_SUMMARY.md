@@ -128,4 +128,4 @@ All expected MCP tools are properly registered and accessible:
 - **Coverage**: All core MCP Selenium functionality verified
 - **Issues Found**: 1 critical bug (close_session parameter parsing)
 
-The integration test suite successfully validates that the mcp-selenium-haskell server properly implements the MCP protocol and provides reliable Selenium WebDriver functionality through the standardized interface, with the noted exception of the session cleanup functionality.
+The integration test suite successfully validates that the mcp-selenium server properly implements the MCP protocol and provides reliable Selenium WebDriver functionality through the standardized interface, with the noted exception of the session cleanup functionality.

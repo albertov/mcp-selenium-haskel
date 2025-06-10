@@ -1,6 +1,6 @@
 # Integration Testing for mcp-selenium-haskell
 
-This directory contains comprehensive black-box integration tests for the `mcp-selenium-haskell` MCP server.
+This directory contains comprehensive black-box integration tests for the `mcp-selenium` MCP server.
 
 ## Architecture
 
