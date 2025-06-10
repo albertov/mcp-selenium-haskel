@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 -- | Main MCP server implementation for Selenium automation
 module MCP.Selenium.Server
@@ -10,9 +11,9 @@ where
 
 import Data.Aeson (FromJSON, object, parseJSON, (.=))
 import Data.Aeson.Key (fromText)
+import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (parseMaybe)
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import MCP.Selenium.Tools
 import Network.MCP.Server (Server, createServer, registerToolCallHandler, registerTools)
 import Network.MCP.Server.StdIO (runServerWithSTDIO)
@@ -92,37 +93,31 @@ startBrowserTool =
     { toolName = "start_browser",
       toolDescription = Just "Launches a browser session",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "browser"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["chrome", "firefox"] :: [T.Text]),
-                        "description" .= ("Browser to launch" :: T.Text)
-                      ],
-                  "options"
-                    .= object
-                      [ "type" .= ("object" :: T.Text),
-                        "properties"
-                          .= object
-                            [ "headless"
-                                .= object
-                                  [ "type" .= ("boolean" :: T.Text),
-                                    "description" .= ("Run browser in headless mode" :: T.Text)
-                                  ],
-                              "arguments"
-                                .= object
-                                  [ "type" .= ("array" :: T.Text),
-                                    "items" .= object ["type" .= ("string" :: T.Text)],
-                                    "description" .= ("Additional browser arguments" :: T.Text)
-                                  ]
-                            ]
-                      ]
-                ],
-            "required" .= (["browser"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "browser": {
+            "type": "string",
+            "enum": ["chrome", "firefox"],
+            "description": "Browser to launch"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "headless": {
+                "type": "boolean",
+                "description": "Run browser in headless mode"
+              },
+              "arguments": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Additional browser arguments"
+              }
+            }
+          }
+        },
+        "required": ["browser"]
+      }|]
     }
 
 navigateTool :: Tool
@@ -131,18 +126,16 @@ navigateTool =
     { toolName = "navigate",
       toolDescription = Just "Navigates to a URL",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "url"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "description" .= ("URL to navigate to" :: T.Text)
-                      ]
-                ],
-            "required" .= (["url"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL to navigate to"
+          }
+        },
+        "required": ["url"]
+      }|]
     }
 
 findElementTool :: Tool
@@ -151,30 +144,26 @@ findElementTool =
     { toolName = "find_element",
       toolDescription = Just "Finds an element on the page",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text]),
-                        "description" .= ("Locator strategy" :: T.Text)
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "description" .= ("Value for the locator strategy" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "description" .= ("Maximum time to wait for element in milliseconds" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"],
+            "description": "Locator strategy"
+          },
+          "value": {
+            "type": "string",
+            "description": "Value for the locator strategy"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Maximum time to wait for element in milliseconds",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value"]
+      }|]
     }
 
 clickElementTool :: Tool
@@ -183,27 +172,23 @@ clickElementTool =
     { toolName = "click_element",
       toolDescription = Just "Clicks an element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value"]
+      }|]
     }
 
 sendKeysTool :: Tool
@@ -212,32 +197,27 @@ sendKeysTool =
     { toolName = "send_keys",
       toolDescription = Just "Sends keys to an element (typing)",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "text"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "description" .= ("Text to enter into the element" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value", "text"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "Text to enter into the element"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value", "text"]
+      }|]
     }
 
 getElementTextTool :: Tool
@@ -246,27 +226,23 @@ getElementTextTool =
     { toolName = "get_element_text",
       toolDescription = Just "Gets the text content of an element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value"]
+      }|]
     }
 
 hoverTool :: Tool
@@ -275,27 +251,23 @@ hoverTool =
     { toolName = "hover",
       toolDescription = Just "Moves the mouse to hover over an element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value"]
+      }|]
     }
 
 dragAndDropTool :: Tool
@@ -304,36 +276,30 @@ dragAndDropTool =
     { toolName = "drag_and_drop",
       toolDescription = Just "Drags an element and drops it onto another element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "targetBy"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "targetValue"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value", "targetBy", "targetValue"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "targetBy": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "targetValue": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value", "targetBy", "targetValue"]
+      }|]
     }
 
 doubleClickTool :: Tool
@@ -342,27 +308,23 @@ doubleClickTool =
     { toolName = "double_click",
       toolDescription = Just "Performs a double click on an element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value"]
+      }|]
     }
 
 rightClickTool :: Tool
@@ -371,27 +333,23 @@ rightClickTool =
     { toolName = "right_click",
       toolDescription = Just "Performs a right click (context click) on an element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value"]
+      }|]
     }
 
 pressKeyTool :: Tool
@@ -400,18 +358,16 @@ pressKeyTool =
     { toolName = "press_key",
       toolDescription = Just "Simulates pressing a keyboard key",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "key"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "description" .= ("Key to press (e.g., 'Enter', 'Tab', 'a', etc.)" :: T.Text)
-                      ]
-                ],
-            "required" .= (["key"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Key to press (e.g., 'Enter', 'Tab', 'a', etc.)"
+          }
+        },
+        "required": ["key"]
+      }|]
     }
 
 uploadFileTool :: Tool
@@ -420,32 +376,27 @@ uploadFileTool =
     { toolName = "upload_file",
       toolDescription = Just "Uploads a file using a file input element",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "by"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "enum" .= (["id", "css", "xpath", "name", "tag", "class"] :: [T.Text])
-                      ],
-                  "value"
-                    .= object
-                      [ "type" .= ("string" :: T.Text)
-                      ],
-                  "filePath"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "description" .= ("Absolute path to the file to upload" :: T.Text)
-                      ],
-                  "timeout"
-                    .= object
-                      [ "type" .= ("number" :: T.Text),
-                        "default" .= (10000 :: Int)
-                      ]
-                ],
-            "required" .= (["by", "value", "filePath"] :: [T.Text])
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "filePath": {
+            "type": "string",
+            "description": "Absolute path to the file to upload"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["by", "value", "filePath"]
+      }|]
     }
 
 takeScreenshotTool :: Tool
@@ -454,17 +405,15 @@ takeScreenshotTool =
     { toolName = "take_screenshot",
       toolDescription = Just "Captures a screenshot of the current page",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text),
-            "properties"
-              .= object
-                [ "outputPath"
-                    .= object
-                      [ "type" .= ("string" :: T.Text),
-                        "description" .= ("Path where to save the screenshot. If not provided, returns base64 data." :: T.Text)
-                      ]
-                ]
-          ]
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "outputPath": {
+            "type": "string",
+            "description": "Path where to save the screenshot. If not provided, returns base64 data."
+          }
+        }
+      }|]
     }
 
 closeSessionTool :: Tool
@@ -473,9 +422,9 @@ closeSessionTool =
     { toolName = "close_session",
       toolDescription = Just "Closes the current browser session and cleans up resources",
       toolInputSchema =
-        object
-          [ "type" .= ("object" :: T.Text)
-          ]
+        [aesonQQ|{
+        "type": "object"
+      }|]
     }
 
 -- | Run the Selenium MCP server using stdio transport

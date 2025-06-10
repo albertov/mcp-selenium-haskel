@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-06-10
+
+### Changed
+- Refactored tool input schemas to use aeson-qq quasi-quoters for improved readability
+- Replaced manual JSON object construction with inline JSON syntax using `[aesonQQ|...|]`
+- Added aeson-qq dependency for cleaner schema definitions
+
+### Technical Details
+- All MCP tool input schemas now use aeson-qq quasi-quoters instead of Data.Aeson object builders
+- Removed redundant type annotations and improved schema maintainability
+- Schemas are now defined using native JSON syntax within Haskell code
+
 ## [2.1.0] - 2025-06-10
 
 ### Added
