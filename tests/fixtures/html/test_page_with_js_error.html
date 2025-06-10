@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page with JS Error</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #error-indicator {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1 id="page-title">Test Page with JavaScript Error</h1>
+        <p id="main-content">This page contains JavaScript that will produce console errors but the page should still render correctly.</p>
+
+        <button id="trigger-error-button" onclick="triggerError()">Trigger JS Error</button>
+
+        <div id="error-indicator"></div>
+
+        <p id="status">Page loaded successfully despite JS errors</p>
+    </div>
+
+    <script>
+        // This script intentionally contains errors that will show in Chrome DevTools console
+
+        // Error 1: Reference to undefined variable
+        console.log("About to trigger first error...");
+        try {
+            someUndefinedVariable.doSomething();
+        } catch (e) {
+            console.error("Caught error with undefined variable:", e);
+            document.getElementById('error-indicator').innerHTML = "JS Error: " + e.message;
+        }
+
+        // Error 2: Calling undefined function
+        console.log("About to trigger second error...");
+        setTimeout(function() {
+            try {
+                undefinedFunction();
+            } catch (e) {
+                console.error("Caught error with undefined function:", e);
+            }
+        }, 100);
+
+        // Error 3: Null pointer access
+        console.log("About to trigger third error...");
+        setTimeout(function() {
+            try {
+                let nullObj = null;
+                nullObj.property.access();
+            } catch (e) {
+                console.error("Caught error with null pointer:", e);
+            }
+        }, 200);
+
+        // Function that can be triggered by button click
+        function triggerError() {
+            try {
+                // This will throw an error
+                nonExistentObject.method();
+            } catch (e) {
+                console.error("Button triggered error:", e);
+                document.getElementById('error-indicator').innerHTML += "<br>Button Error: " + e.message;
+            }
+        }
+
+        // Despite errors, page should still be functional
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Page loaded successfully despite errors");
+        });
+    </script>
+</body>
+</html>
