@@ -1,20 +1,18 @@
 import pytest
+import pytest_asyncio
 import asyncio
 import tempfile
 import shutil
+import sys
 from pathlib import Path
 from typing import AsyncGenerator
 
+# Add the tests directory to Python path so we can import utils
+tests_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(tests_dir))
+
 from utils.mcp_client import MCPSeleniumClient
 from utils.html_server import TestHTMLServer
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -35,14 +33,14 @@ def mcp_executable_path():
     return "mcp-selenium-hs"
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def mcp_client(mcp_executable_path) -> AsyncGenerator[MCPSeleniumClient, None]:
     """Create MCP client connected to Haskell server"""
     async with MCPSeleniumClient(str(mcp_executable_path)) as client:
         yield client
 
 
-@pytest.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session")
 async def test_server():
     """Start local HTTP server for test HTML files"""
     server = TestHTMLServer()

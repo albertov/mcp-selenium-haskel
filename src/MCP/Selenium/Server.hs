@@ -63,20 +63,20 @@ createSeleniumServer = do
 createHandler :: SeleniumTools -> ToolCallHandler
 createHandler tools request = do
   case callToolName request of
-    "start_browser" -> parseAndHandle handleStartBrowser
-    "navigate" -> parseAndHandle handleNavigate
-    "find_element" -> parseAndHandle handleFindElement
-    "click_element" -> parseAndHandle handleClickElement
-    "send_keys" -> parseAndHandle handleSendKeys
-    "get_element_text" -> parseAndHandle handleGetElementText
-    "hover" -> parseAndHandle handleHover
-    "drag_and_drop" -> parseAndHandle handleDragAndDrop
-    "double_click" -> parseAndHandle handleDoubleClick
-    "right_click" -> parseAndHandle handleRightClick
-    "press_key" -> parseAndHandle handlePressKey
-    "upload_file" -> parseAndHandle handleUploadFile
-    "take_screenshot" -> parseAndHandle handleTakeScreenshot
-    "close_session" -> parseAndHandle handleCloseSession
+    "StartBrowser" -> parseAndHandle handleStartBrowser
+    "Navigate" -> parseAndHandle handleNavigate
+    "FindElement" -> parseAndHandle handleFindElement
+    "Click" -> parseAndHandle handleClickElement
+    "SendKeys" -> parseAndHandle handleSendKeys
+    "GetText" -> parseAndHandle handleGetElementText
+    "Hover" -> parseAndHandle handleHover
+    "DragAndDrop" -> parseAndHandle handleDragAndDrop
+    "DoubleClick" -> parseAndHandle handleDoubleClick
+    "RightClick" -> parseAndHandle handleRightClick
+    "PressKey" -> parseAndHandle handlePressKey
+    "UploadFile" -> parseAndHandle handleUploadFile
+    "TakeScreenshot" -> parseAndHandle handleTakeScreenshot
+    "CloseSession" -> parseAndHandle handleCloseSession
     _ -> return $ CallToolResult [ToolContent TextualContent (Just "Unknown tool")] True
   where
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
@@ -90,7 +90,7 @@ createHandler tools request = do
 startBrowserTool :: Tool
 startBrowserTool =
   Tool
-    { toolName = "start_browser",
+    { toolName = "StartBrowser",
       toolDescription = Just "Launches a browser session",
       toolInputSchema =
         [aesonQQ|{
