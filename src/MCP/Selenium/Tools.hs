@@ -176,13 +176,24 @@ handleStartBrowser tools (StartBrowserParams browserVal optionsVal optsVal _) = 
         (Just o, _) -> o
         (Nothing, Just o) -> o
         (Nothing, Nothing) -> BrowserOptions Nothing Nothing
+  putStrLn $ "DEBUG: Starting browser " ++ show browserVal ++ " with options " ++ show finalOpts
   catch
     ( do
         session <- initializeSession browserVal finalOpts
+        putStrLn $ "DEBUG: Created browser session: " ++ show (MCP.Selenium.WebDriver.browser session)
         atomically $ writeTVar (sessionVar tools) (Just session)
+        putStrLn "DEBUG: Stored session in TVar"
+        -- Verify the session was stored
+        stored <- readTVarIO (sessionVar tools)
+        case stored of
+          Just _ -> putStrLn "DEBUG: Session verified in TVar"
+          Nothing -> putStrLn "DEBUG: ERROR - Session not found in TVar after storing!"
         return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
     )
-    (\e -> return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException)))
+    ( \e -> do
+        putStrLn $ "DEBUG: Failed to start browser: " ++ show (e :: SomeException)
+        return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException))
+    )
 
 -- | Handle navigate tool
 handleNavigate :: SeleniumTools -> NavigateParams -> IO CallToolResult
@@ -202,9 +213,13 @@ handleNavigate tools params = do
 handleFindElement :: SeleniumTools -> FindElementParams -> IO CallToolResult
 handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal) = do
   sessionMaybe <- readTVarIO (sessionVar tools)
+  -- Debug logging
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> do
+      putStrLn "DEBUG: No active browser session found in sessionVar"
+      return $ errorResult "No active browser session"
+    Just session -> do
+      putStrLn $ "DEBUG: Found active browser session: " ++ show (MCP.Selenium.WebDriver.browser session)
       catch
         ( do
             let byStrategy = case (byVal, strategyVal) of
@@ -213,14 +228,19 @@ handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal
                   (Nothing, Nothing) -> "id" -- default
                 locator = parseLocatorStrategy byStrategy valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
+            putStrLn $ "DEBUG: Using locator strategy: " ++ T.unpack byStrategy ++ " with value: " ++ T.unpack valueVal
             element <- findElementByLocator session locator timeoutMs
             -- Return element information with proper JSON encoding
             let elementIdText = T.pack (show element)
                 responseJson = object [("elementId", toJSON elementIdText), ("found", toJSON True)]
                 responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+            putStrLn $ "DEBUG: Found element: " ++ T.unpack elementIdText
             return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
         )
-        (\e -> return $ errorResult $ "Element not found: " <> T.pack (show (e :: SomeException)))
+        ( \e -> do
+            putStrLn $ "DEBUG: Element search failed: " ++ show (e :: SomeException)
+            return $ errorResult $ "Element not found: " <> T.pack (show (e :: SomeException))
+        )
 
 -- | Handle click_element tool
 handleClickElement :: SeleniumTools -> ClickElementParams -> IO CallToolResult

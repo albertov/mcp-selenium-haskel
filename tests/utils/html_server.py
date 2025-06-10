@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import time
+import socket
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
@@ -8,12 +9,20 @@ from pathlib import Path
 class TestHTMLServer:
     """Simple HTTP server for serving test HTML fixtures"""
 
-    def __init__(self, port=8080, fixtures_dir="tests/fixtures/html"):
-        self.port = port
+    def __init__(self, port=None, fixtures_dir="tests/fixtures/html"):
+        self.port = port or self._find_free_port()
         self.fixtures_dir = Path(fixtures_dir).resolve()
-        self.base_url = f"http://localhost:{port}"
+        self.base_url = f"http://localhost:{self.port}"
         self.server = None
         self.server_thread = None
+
+    def _find_free_port(self):
+        """Find a free port to bind to"""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('', 0))
+            s.listen(1)
+            port = s.getsockname()[1]
+        return port
 
     async def start(self):
         """Start the HTTP server in a separate thread"""
@@ -26,9 +35,21 @@ class TestHTMLServer:
                 import os
                 os.chdir(self.fixtures_dir)
 
-                # Create and start server
-                self.server = HTTPServer(('localhost', self.port), SimpleHTTPRequestHandler)
-                self.server.serve_forever()
+                # Create and start server with retry logic for port conflicts
+                max_retries = 5
+                for attempt in range(max_retries):
+                    try:
+                        self.server = HTTPServer(('localhost', self.port), SimpleHTTPRequestHandler)
+                        break
+                    except OSError as e:
+                        if e.errno == 98 and attempt < max_retries - 1:  # Address already in use
+                            self.port = self._find_free_port()
+                            self.base_url = f"http://localhost:{self.port}"
+                            continue
+                        raise
+
+                if self.server:
+                    self.server.serve_forever()
             except Exception as e:
                 print(f"Server error: {e}")
             finally:

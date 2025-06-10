@@ -2,7 +2,6 @@ import asyncio
 import json
 import subprocess
 import tempfile
-from contextlib import AsyncExitStack
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 
@@ -16,7 +15,8 @@ class MCPSeleniumClient:
     def __init__(self, executable_path: str):
         self.executable_path = executable_path
         self.session: Optional[ClientSession] = None
-        self.exit_stack = AsyncExitStack()
+        self._stdio_context_manager = None
+        self._session_context_manager = None
 
     async def __aenter__(self):
         # Configure server parameters for Haskell executable
@@ -27,22 +27,30 @@ class MCPSeleniumClient:
         )
 
         # Connect to server
-        stdio_transport = await self.exit_stack.enter_async_context(
-            stdio_client(server_params)
-        )
+        self._stdio_context_manager = stdio_client(server_params)
+        stdio_transport = await self._stdio_context_manager.__aenter__()
         self.stdio, self.write = stdio_transport
 
         # Create session
-        self.session = await self.exit_stack.enter_async_context(
-            ClientSession(self.stdio, self.write)
-        )
+        self._session_context_manager = ClientSession(self.stdio, self.write)
+        self.session = await self._session_context_manager.__aenter__()
 
         # Initialize connection
         await self.session.initialize()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.exit_stack.aclose()
+        if self._session_context_manager is not None:
+            try:
+                await self._session_context_manager.__aexit__(exc_type, exc_val, exc_tb)
+            except Exception:
+                pass  # Ignore cleanup errors
+
+        if self._stdio_context_manager is not None:
+            try:
+                await self._stdio_context_manager.__aexit__(exc_type, exc_val, exc_tb)
+            except Exception:
+                pass  # Ignore cleanup errors
 
     async def list_tools(self) -> List[str]:
         """Get list of available tools from server"""

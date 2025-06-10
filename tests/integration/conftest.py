@@ -33,7 +33,7 @@ def mcp_executable_path():
     return "mcp-selenium-hs"
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="session")
 async def mcp_client(mcp_executable_path) -> AsyncGenerator[MCPSeleniumClient, None]:
     """Create MCP client connected to Haskell server"""
     async with MCPSeleniumClient(str(mcp_executable_path)) as client:

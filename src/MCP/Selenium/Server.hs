@@ -114,6 +114,24 @@ startBrowserTool =
                 "description": "Additional browser arguments"
               }
             }
+          },
+          "opts": {
+            "type": "object",
+            "properties": {
+              "headless": {
+                "type": "boolean",
+                "description": "Run browser in headless mode"
+              },
+              "arguments": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Additional browser arguments"
+              }
+            }
+          },
+          "enableLogging": {
+            "type": "boolean",
+            "description": "Enable logging for debugging"
           }
         },
         "required": ["browser"]
@@ -147,10 +165,15 @@ findElementTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
-          "by": {
+          "strategy": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"],
             "description": "Locator strategy"
+          },
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"],
+            "description": "Locator strategy (alternative to strategy)"
           },
           "value": {
             "type": "string",
@@ -162,7 +185,7 @@ findElementTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["value"]
       }|]
     }
 
