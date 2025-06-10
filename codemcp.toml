@@ -3,7 +3,7 @@ project_prompt = """
 You MUST always run the 'lint' tool on every Haskell file you modify and fix ALL the warnings
 and errors it reports.
 
-You can use the 'hoogle' tool to search for documentation about symbols in
+You can use the 'hoogle' command to search for documentation about symbols in
 any external dependency we have available. You should implement functionality
 using existing dependencies when possible.
 

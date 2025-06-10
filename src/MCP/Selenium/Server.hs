@@ -67,9 +67,9 @@ createHandler tools handler request = do
 startBrowserTool :: Tool
 startBrowserTool =
   Tool
-    { name = "start_browser",
-      description = "Launches a browser session",
-      inputSchema =
+    { toolName = "start_browser",
+      toolDescription = Just "Launches a browser session",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -106,9 +106,9 @@ startBrowserTool =
 navigateTool :: Tool
 navigateTool =
   Tool
-    { name = "navigate",
-      description = "Navigates to a URL",
-      inputSchema =
+    { toolName = "navigate",
+      toolDescription = Just "Navigates to a URL",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -126,9 +126,9 @@ navigateTool =
 findElementTool :: Tool
 findElementTool =
   Tool
-    { name = "find_element",
-      description = "Finds an element on the page",
-      inputSchema =
+    { toolName = "find_element",
+      toolDescription = Just "Finds an element on the page",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -158,9 +158,9 @@ findElementTool =
 clickElementTool :: Tool
 clickElementTool =
   Tool
-    { name = "click_element",
-      description = "Clicks an element",
-      inputSchema =
+    { toolName = "click_element",
+      toolDescription = Just "Clicks an element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -187,9 +187,9 @@ clickElementTool =
 sendKeysTool :: Tool
 sendKeysTool =
   Tool
-    { name = "send_keys",
-      description = "Sends keys to an element (typing)",
-      inputSchema =
+    { toolName = "send_keys",
+      toolDescription = Just "Sends keys to an element (typing)",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -221,9 +221,9 @@ sendKeysTool =
 getElementTextTool :: Tool
 getElementTextTool =
   Tool
-    { name = "get_element_text",
-      description = "Gets the text content of an element",
-      inputSchema =
+    { toolName = "get_element_text",
+      toolDescription = Just "Gets the text content of an element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -250,9 +250,9 @@ getElementTextTool =
 hoverTool :: Tool
 hoverTool =
   Tool
-    { name = "hover",
-      description = "Moves the mouse to hover over an element",
-      inputSchema =
+    { toolName = "hover",
+      toolDescription = Just "Moves the mouse to hover over an element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -279,9 +279,9 @@ hoverTool =
 dragAndDropTool :: Tool
 dragAndDropTool =
   Tool
-    { name = "drag_and_drop",
-      description = "Drags an element and drops it onto another element",
-      inputSchema =
+    { toolName = "drag_and_drop",
+      toolDescription = Just "Drags an element and drops it onto another element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -317,9 +317,9 @@ dragAndDropTool =
 doubleClickTool :: Tool
 doubleClickTool =
   Tool
-    { name = "double_click",
-      description = "Performs a double click on an element",
-      inputSchema =
+    { toolName = "double_click",
+      toolDescription = Just "Performs a double click on an element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -346,9 +346,9 @@ doubleClickTool =
 rightClickTool :: Tool
 rightClickTool =
   Tool
-    { name = "right_click",
-      description = "Performs a right click (context click) on an element",
-      inputSchema =
+    { toolName = "right_click",
+      toolDescription = Just "Performs a right click (context click) on an element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -375,9 +375,9 @@ rightClickTool =
 pressKeyTool :: Tool
 pressKeyTool =
   Tool
-    { name = "press_key",
-      description = "Simulates pressing a keyboard key",
-      inputSchema =
+    { toolName = "press_key",
+      toolDescription = Just "Simulates pressing a keyboard key",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -395,9 +395,9 @@ pressKeyTool =
 uploadFileTool :: Tool
 uploadFileTool =
   Tool
-    { name = "upload_file",
-      description = "Uploads a file using a file input element",
-      inputSchema =
+    { toolName = "upload_file",
+      toolDescription = Just "Uploads a file using a file input element",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
@@ -429,9 +429,9 @@ uploadFileTool =
 takeScreenshotTool :: Tool
 takeScreenshotTool =
   Tool
-    { name = "take_screenshot",
-      description = "Captures a screenshot of the current page",
-      inputSchema =
+    { toolName = "take_screenshot",
+      toolDescription = Just "Captures a screenshot of the current page",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text),
             "properties"
