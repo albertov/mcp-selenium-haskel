@@ -42,73 +42,30 @@ class ServiceManager:
     def start_selenium_server(self):
         """Start selenium-server-standalone daemon"""
         print("Starting selenium-server daemon...")
-
         try:
-            # Try different methods to start selenium server
-            selenium_commands = [
-                # Method 1: Direct java command if selenium jar is in nix store
-                lambda: self._try_java_selenium(),
-                # Method 2: Use selenium-server-standalone if in PATH
-                lambda: self._try_selenium_standalone(),
-                # Method 3: Skip selenium server (assume external)
-                lambda: self._skip_selenium_server()
-            ]
-
-            for method in selenium_commands:
-                try:
-                    if method():
-                        break
-                except Exception as e:
-                    print(f"Selenium startup method failed: {e}, trying next...")
-                    continue
-            else:
-                print("Warning: Could not start selenium server, assuming external server")
-
-            # Wait for selenium server to be available
-            self._wait_for_service("localhost", self.selenium_port, "Selenium server")
-            print(f"Selenium server available on port {self.selenium_port}")
-
+            self._try_selenium_standalone()
+        except Exception as e:
+            print(f"Selenium startup method failed: {e}, trying next...")
         except TimeoutError:
             print("Warning: Selenium server not detected, tests may fail if selenium is required")
         except Exception as e:
             print(f"Failed to start selenium server: {e}")
             raise
 
-    def _try_java_selenium(self):
-        """Try to start selenium using java -jar"""
-        import glob
-        jar_files = glob.glob("/nix/store/*/share/selenium-server-standalone-*.jar")
-        if not jar_files:
-            jar_files = glob.glob("/nix/store/*/selenium-server-standalone-*.jar")
+        # Wait for selenium server to be available
+        self._wait_for_service("localhost", self.selenium_port, "Selenium server")
+        print(f"Selenium server available on port {self.selenium_port}")
 
-        if jar_files:
-            cmd = [
-                "java", "-jar", jar_files[0],
-                "-port", str(self.selenium_port)
-            ]
-
-            self.selenium_process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            return True
-        return False
 
     def _try_selenium_standalone(self):
         """Try to use selenium-server-standalone command"""
-        cmd = ["selenium-server-standalone", "-port", str(self.selenium_port)]
+        cmd = ["selenium-server", "-port", str(self.selenium_port)]
 
         self.selenium_process = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        return True
-
-    def _skip_selenium_server(self):
-        """Skip starting selenium server (assume external)"""
-        print("Skipping selenium server startup, assuming external server")
         return True
 
     def start_http_server(self):

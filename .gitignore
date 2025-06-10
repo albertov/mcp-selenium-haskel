@@ -2,3 +2,6 @@
 dist-newstyle/
 run_hoogle.sh
 result*
+__pycache__
+*.pyc
+*.pyo
