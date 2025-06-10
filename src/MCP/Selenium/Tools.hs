@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | MCP Tools for Selenium browser automation

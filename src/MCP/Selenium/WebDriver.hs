@@ -28,17 +28,16 @@ module MCP.Selenium.WebDriver
 where
 
 import Control.Exception (Exception)
-import Data.Aeson (FromJSON, ToJSON, object, parseJSON, toJSON)
+import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy as BSL
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
-import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox)
 import qualified Test.WebDriver as WD
-import qualified Test.WebDriver.Commands as WDC
 import Test.WebDriver.Session (WDSession (..), getSession)
 
 -- | Browser type enumeration
@@ -89,38 +88,42 @@ newtype SeleniumError = SeleniumError T.Text
 instance Exception SeleniumError
 
 -- | Convert LocatorStrategy to WebDriver's Selector
-locatorToBy :: LocatorStrategy -> Selector
-locatorToBy (ById t) = WDC.ById t
-locatorToBy (ByCss t) = WDC.ByCSS t
-locatorToBy (ByXPath t) = WDC.ByXPath t
-locatorToBy (ByName t) = WDC.ByName t
-locatorToBy (ByTag t) = WDC.ByTag t
-locatorToBy (ByClass t) = WDC.ByClass t
+locatorToBy :: LocatorStrategy -> WD.Selector
+locatorToBy (ById t) = WD.ById t
+locatorToBy (ByCss t) = WD.ByCSS t
+locatorToBy (ByXPath t) = WD.ByXPath t
+locatorToBy (ByName t) = WD.ByName t
+locatorToBy (ByTag t) = WD.ByTag t
+locatorToBy (ByClass t) = WD.ByClass t
 
 -- | Create WebDriver config for given browser and options
-createWebDriverConfig :: Browser -> BrowserOptions -> WDConfig
+createWebDriverConfig :: Browser -> BrowserOptions -> WD.WDConfig
 createWebDriverConfig browserType opts =
   let baseConfig = case browserType of
-        Chrome -> defaultConfig {wdCapabilities = defaultCaps {WD.browser = WD.chrome}}
-        Firefox -> defaultConfig {wdCapabilities = defaultCaps {WD.browser = WD.firefox}}
+        Chrome -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.chrome}}
+        Firefox -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.firefox}}
       -- Ensure we're using the default Selenium server URL (localhost:4444)
-      configWithHost = baseConfig {wdHost = "127.0.0.1", wdPort = 4444}
-      chromeOpts = case arguments opts of
-        Just args ->
-          ["--" ++ T.unpack arg | arg <- args]
-            ++ ["--headless=new" | headless opts == Just True]
-        Nothing -> ["--headless=new" | headless opts == Just True]
+      configWithHost = baseConfig {WD.wdHost = "127.0.0.1", WD.wdPort = 4444}
+      chromeCapabilities :: WD.Capabilities
+      chromeCapabilities =
+        WD.defaultCaps
+          { WD.browser =
+              WD.Chrome
+                { chromeDriverVersion = mempty,
+                  chromeBinary = mempty,
+                  chromeOptions =
+                    ["--width=1024", "--height=768"]
+                      <> if fromMaybe False (headless opts)
+                        then ["--headless=new", "--no-sandbox", "--disable-gpu"]
+                        else [],
+                  chromeExtensions = mempty,
+                  chromeExperimentalOptions = mempty
+                }
+          }
    in case browserType of
         Chrome ->
           configWithHost
-            { wdCapabilities =
-                (wdCapabilities configWithHost)
-                  { additionalCaps =
-                      [ ( "goog:chromeOptions",
-                          object [("args", toJSON chromeOpts)]
-                        )
-                      ]
-                  }
+            { WD.wdCapabilities = chromeCapabilities
             }
         Firefox -> configWithHost
 
@@ -133,102 +136,102 @@ initializeSession browserType opts = do
 
 -- | Close the WebDriver session
 closeSeleniumSession :: SeleniumSession -> IO ()
-closeSeleniumSession (SeleniumSession _ session) = runWD session WDC.closeSession
+closeSeleniumSession (SeleniumSession _ session) = WD.runWD session WD.closeSession
 
 -- | Navigate to URL
 navigateToUrl :: SeleniumSession -> T.Text -> IO ()
 navigateToUrl (SeleniumSession _ session) url = do
-  runWD session $
-    openPage (T.unpack url)
+  WD.runWD session $
+    WD.openPage (T.unpack url)
 
 -- | Find element by locator strategy
-findElementByLocator :: SeleniumSession -> LocatorStrategy -> Int -> IO Element
+findElementByLocator :: SeleniumSession -> LocatorStrategy -> Int -> IO WD.Element
 findElementByLocator (SeleniumSession _ session) locator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    findElem (locatorToBy locator)
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    WD.findElem (locatorToBy locator)
 
 -- | Click an element
 clickElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
 clickElement (SeleniumSession _ session) locator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
-    click element
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
+    WD.click element
 
 -- | Send keys to an element
 sendKeysToElement :: SeleniumSession -> LocatorStrategy -> T.Text -> Int -> IO ()
 sendKeysToElement (SeleniumSession _ session) locator text timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
-    sendKeys text element
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
+    WD.sendKeys text element
 
 -- | Get text content of an element
 getElementText :: SeleniumSession -> LocatorStrategy -> Int -> IO T.Text
 getElementText (SeleniumSession _ session) locator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
-    getText element
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
+    WD.getText element
 
 -- | Hover over an element
 hoverElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
 hoverElement (SeleniumSession _ session) locator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
-    moveToCenter element
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
+    WD.moveToCenter element
 
 -- | Drag and drop between elements
 dragAndDropElements :: SeleniumSession -> LocatorStrategy -> LocatorStrategy -> Int -> IO ()
 dragAndDropElements (SeleniumSession _ session) sourceLocator targetLocator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    sourceElement <- findElem (locatorToBy sourceLocator)
-    targetElement <- findElem (locatorToBy targetLocator)
-    moveToCenter sourceElement
-    mouseDown
-    moveToCenter targetElement
-    mouseUp
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    sourceElement <- WD.findElem (locatorToBy sourceLocator)
+    targetElement <- WD.findElem (locatorToBy targetLocator)
+    WD.moveToCenter sourceElement
+    WD.mouseDown
+    WD.moveToCenter targetElement
+    WD.mouseUp
 
 -- | Double click an element
 doubleClickElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
 doubleClickElement (SeleniumSession _ session) locator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
-    moveToCenter element
-    doubleClick
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
+    WD.moveToCenter element
+    WD.doubleClick
 
 -- | Right click an element
 rightClickElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
 rightClickElement (SeleniumSession _ session) locator timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
     -- Note: contextClick is not available in this webdriver version
     -- As a workaround, we move to the element
-    moveToCenter element
+    WD.moveToCenter element
 
 -- | Press a key
 pressKey :: SeleniumSession -> T.Text -> IO ()
 pressKey (SeleniumSession _ session) key = do
-  runWD session $
-    sendRawKeys key
+  WD.runWD session $
+    WD.sendRawKeys key
 
 -- | Upload file to input element
 uploadFileToElement :: SeleniumSession -> LocatorStrategy -> T.Text -> Int -> IO ()
 uploadFileToElement (SeleniumSession _ session) locator filePath timeoutMs = do
-  runWD session $ do
-    setImplicitWait (fromIntegral timeoutMs)
-    element <- findElem (locatorToBy locator)
-    sendKeys filePath element
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    element <- WD.findElem (locatorToBy locator)
+    WD.sendKeys filePath element
 
 -- | Take screenshot and return base64 encoded data
 takeScreenshot :: SeleniumSession -> Maybe T.Text -> IO T.Text
 takeScreenshot (SeleniumSession _ session) outputPath = do
-  screenshotDataLazy <- runWD session screenshot
+  screenshotDataLazy <- WD.runWD session WD.screenshot
   let screenshotData = BSL.toStrict screenshotDataLazy
   case outputPath of
     Just path -> do

@@ -45,14 +45,6 @@ This automatically:
 4. Runs the integration test suite
 5. Stops all services
 
-### Validation
-
-Before running the full test suite, validate your setup:
-
-```bash
-./validate_integration_setup.py
-```
-
 ### Documentation
 
 For detailed information about the integration testing setup, see [tests/README.md](tests/README.md).

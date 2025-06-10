@@ -27,7 +27,7 @@ class TestElementInteraction:
         url = f"{test_server.base_url}/test_page.html"
         await mcp_client.navigate(url)
 
-        result = await mcp_client.find_element("id", "nonexistent")
+        result = await mcp_client.find_element("id", "nonexistent", 1)
 
         # The server should return an error for non-existent elements
         assert "error" in result or "Element not found" in result.get("text", "")
