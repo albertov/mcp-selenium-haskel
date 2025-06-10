@@ -1,2 +1,4 @@
 *.sw?
 dist-newstyle/
+run_hoogle.sh
+result*

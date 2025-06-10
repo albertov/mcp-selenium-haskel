@@ -27,7 +27,7 @@ command = ["cabal", "test"]
 doc = "Accepts the name of a single package as an argument to run their specific tests"
 
 [commands.hoogle]
-command = ["hoogle"]
+command = ["./run_hoogle.sh"]
 doc = """
 Use Hoogle to seach symbols in available dependencies.
 You may only search one symbol at a time

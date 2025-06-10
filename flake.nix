@@ -23,7 +23,7 @@
             inherit hoogle;
             hixProject =
               final.haskell-nix.hix.project {
-                src = ./.;
+                src = builtins.path { path = ./.; name = "source"; };
                 evalSystem = "x86_64-linux";
               };
           })
@@ -31,13 +31,20 @@
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
         flake = pkgs.hixProject.flake { };
 
-        hoogle = pkgs.hixProject.ghcWithHoogle (
+        hoogleEnv = pkgs.hixProject.ghcWithHoogle (
           _: builtins.attrValues
             (
               pkgs.lib.filterAttrs (_: p: p.isLocal or false && p.components ? library)
                 pkgs.hixProject.hsPkgs
             )
         );
+        hoogle = pkgs.writeShellApplication {
+            name = "hoogle";
+            runtimeInputs = [ hoogleEnv ];
+            text = ''
+              hoogle "$@"
+            '';
+        };
       in
       flake // {
         legacyPackages = pkgs;
