@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | WebDriver operations wrapper for Selenium automation
 module MCP.Selenium.WebDriver
@@ -27,7 +28,8 @@ module MCP.Selenium.WebDriver
 where
 
 import Control.Exception (Exception)
-import Data.Aeson (FromJSON, ToJSON, object, toJSON)
+import Data.Aeson (FromJSON, ToJSON, object, parseJSON, toJSON)
+import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy as BSL
@@ -37,12 +39,25 @@ import GHC.Generics (Generic)
 import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox)
 import qualified Test.WebDriver as WD
 import qualified Test.WebDriver.Commands as WDC
-import Test.WebDriver.Config (mkSession)
-import Test.WebDriver.Session (WDSession)
+import Test.WebDriver.Config (WDConfig, defaultCaps, defaultConfig, mkSession)
+import Test.WebDriver.Session (WDSession (..), getSession)
 
 -- | Browser type enumeration
 data Browser = Chrome | Firefox
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic)
+
+-- | Custom JSON instances for case-insensitive browser names
+instance ToJSON Browser where
+  toJSON Chrome = toJSON ("chrome" :: T.Text)
+  toJSON Firefox = toJSON ("firefox" :: T.Text)
+
+instance FromJSON Browser where
+  parseJSON v = do
+    str <- parseJSON v :: Parser T.Text
+    case T.toLower str of
+      "chrome" -> return Chrome
+      "firefox" -> return Firefox
+      _ -> fail $ "Unknown browser: " ++ T.unpack str
 
 -- | Browser configuration options
 data BrowserOptions = BrowserOptions
@@ -89,6 +104,8 @@ createWebDriverConfig browserType opts =
   let baseConfig = case browserType of
         Chrome -> defaultConfig {wdCapabilities = defaultCaps {WD.browser = WD.chrome}}
         Firefox -> defaultConfig {wdCapabilities = defaultCaps {WD.browser = WD.firefox}}
+      -- Ensure we're using the default Selenium server URL (localhost:4444)
+      configWithHost = baseConfig {wdHost = "127.0.0.1", wdPort = 4444}
       chromeOpts = case arguments opts of
         Just args ->
           ["--" ++ T.unpack arg | arg <- args]
@@ -96,9 +113,9 @@ createWebDriverConfig browserType opts =
         Nothing -> ["--headless" | headless opts == Just True]
    in case browserType of
         Chrome ->
-          baseConfig
+          configWithHost
             { wdCapabilities =
-                (wdCapabilities baseConfig)
+                (wdCapabilities configWithHost)
                   { additionalCaps =
                       [ ( "goog:chromeOptions",
                           object [("args", toJSON chromeOpts)]
@@ -106,12 +123,13 @@ createWebDriverConfig browserType opts =
                       ]
                   }
             }
-        Firefox -> baseConfig
+        Firefox -> configWithHost
 
 -- | Initialize a new WebDriver session
 initializeSession :: Browser -> BrowserOptions -> IO SeleniumSession
 initializeSession browserType opts = do
   let config = createWebDriverConfig browserType opts
+  -- Create a session using mkSession
   session <- mkSession config
   return $ SeleniumSession browserType session
 

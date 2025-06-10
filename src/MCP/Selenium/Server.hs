@@ -95,10 +95,15 @@ createHandler tools request = do
   where
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
     parseAndHandle handler = do
-      case parseMaybe parseJSON (object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))) of
-        Nothing ->
+      let args = object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))
+      debugLog $ "Parsing arguments: " ++ show args
+      case parseMaybe parseJSON args of
+        Nothing -> do
+          debugLog "Failed to parse parameters"
           return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
-        Just params -> handler tools params
+        Just params -> do
+          debugLog "Successfully parsed parameters, calling handler"
+          handler tools params
 
 -- | Tool definitions
 startBrowserTool :: Tool
