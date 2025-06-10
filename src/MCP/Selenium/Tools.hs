@@ -3,18 +3,19 @@
 
 module MCP.Selenium.Tools
   ( SeleniumTool (..),
+    ToolInput (..),
+    ToolResult (..),
     availableTools,
     executeTool,
   )
 where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.:?), (.=))
 import qualified Data.Aeson as Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import MCP.Selenium.Server (ServerConfig (..))
 import MCP.Selenium.WebDriver (SeleniumAction (..), seleniumAction)
 
 data SeleniumTool
@@ -77,11 +78,11 @@ availableTools =
     CloseBrowserTool
   ]
 
-executeTool :: ServerConfig -> SeleniumTool -> ToolInput -> IO ToolResult
-executeTool config tool input = do
+executeTool :: SeleniumTool -> ToolInput -> IO ToolResult
+executeTool tool input = do
   case tool of
     StartBrowserTool -> do
-      result <- seleniumAction config (StartBrowser (inputBrowser input) (inputHeadless input))
+      result <- seleniumAction (StartBrowser (inputBrowser input) (inputHeadless input))
       return $ case result of
         Right sessionId -> ToolResult True "Browser started successfully" (Just $ object ["session_id" .= sessionId])
         Left err -> ToolResult False (T.pack $ show err) Nothing
@@ -89,7 +90,7 @@ executeTool config tool input = do
       case inputUrl input of
         Nothing -> return $ ToolResult False "URL is required" Nothing
         Just url -> do
-          result <- seleniumAction config (NavigateTo url)
+          result <- seleniumAction (NavigateTo url)
           return $ case result of
             Right _ -> ToolResult True ("Navigated to " <> url) Nothing
             Left err -> ToolResult False (T.pack $ show err) Nothing
@@ -97,7 +98,7 @@ executeTool config tool input = do
       case inputSelector input of
         Nothing -> return $ ToolResult False "Selector is required" Nothing
         Just selector -> do
-          result <- seleniumAction config (FindElement selector)
+          result <- seleniumAction (FindElement selector)
           return $ case result of
             Right elementId -> ToolResult True "Element found" (Just $ object ["element_id" .= elementId])
             Left err -> ToolResult False (T.pack $ show err) Nothing
@@ -105,14 +106,14 @@ executeTool config tool input = do
       case inputSelector input of
         Nothing -> return $ ToolResult False "Selector is required" Nothing
         Just selector -> do
-          result <- seleniumAction config (ClickElement selector)
+          result <- seleniumAction (ClickElement selector)
           return $ case result of
             Right _ -> ToolResult True ("Clicked element: " <> selector) Nothing
             Left err -> ToolResult False (T.pack $ show err) Nothing
     TypeTextTool -> do
       case (inputSelector input, inputText input) of
         (Just selector, Just text) -> do
-          result <- seleniumAction config (TypeText selector text)
+          result <- seleniumAction (TypeText selector text)
           return $ case result of
             Right _ -> ToolResult True ("Typed text into: " <> selector) Nothing
             Left err -> ToolResult False (T.pack $ show err) Nothing
@@ -121,25 +122,25 @@ executeTool config tool input = do
       case inputSelector input of
         Nothing -> return $ ToolResult False "Selector is required" Nothing
         Just selector -> do
-          result <- seleniumAction config (GetText selector)
+          result <- seleniumAction (GetText selector)
           return $ case result of
             Right text -> ToolResult True "Text retrieved" (Just $ object ["text" .= text])
             Left err -> ToolResult False (T.pack $ show err) Nothing
     GetAttributeTool -> do
       case (inputSelector input, inputAttribute input) of
         (Just selector, Just attribute) -> do
-          result <- seleniumAction config (GetAttribute selector attribute)
+          result <- seleniumAction (GetAttribute selector attribute)
           return $ case result of
             Right value -> ToolResult True "Attribute retrieved" (Just $ object ["value" .= value])
             Left err -> ToolResult False (T.pack $ show err) Nothing
         _ -> return $ ToolResult False "Both selector and attribute are required" Nothing
     TakeScreenshotTool -> do
-      result <- seleniumAction config TakeScreenshot
+      result <- seleniumAction TakeScreenshot
       return $ case result of
         Right screenshot -> ToolResult True "Screenshot taken" (Just $ object ["screenshot" .= screenshot])
         Left err -> ToolResult False (T.pack $ show err) Nothing
     CloseBrowserTool -> do
-      result <- seleniumAction config CloseBrowser
+      result <- seleniumAction CloseBrowser
       return $ case result of
         Right _ -> ToolResult True "Browser closed" Nothing
         Left err -> ToolResult False (T.pack $ show err) Nothing

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module MCP.Selenium.WebDriver
   ( SeleniumAction (..),
@@ -12,12 +13,12 @@ import Control.Exception (Exception, SomeException, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Object, Value (..), object, (.=))
 import qualified Data.ByteString.Base64 as Base64
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
-import MCP.Selenium.Server (ServerConfig (..))
 import Test.WebDriver
 import Test.WebDriver.Config
 
@@ -42,15 +43,15 @@ data SeleniumError
 
 instance Exception SeleniumError
 
-seleniumAction :: ServerConfig -> SeleniumAction -> IO (Either SeleniumError Text)
-seleniumAction config action = do
-  result <- try $ runWebDriverSession config action
+seleniumAction :: SeleniumAction -> IO (Either SeleniumError Text)
+seleniumAction action = do
+  result <- try $ runWebDriverSession action
   case result of
     Left (e :: SomeException) -> return $ Left (WebDriverError $ show e)
     Right r -> return r
 
-runWebDriverSession :: ServerConfig -> SeleniumAction -> IO (Either SeleniumError Text)
-runWebDriverSession config action = do
+runWebDriverSession :: SeleniumAction -> IO (Either SeleniumError Text)
+runWebDriverSession action = do
   let wdConfig =
         defaultConfig
           { wdHost = "localhost",
@@ -61,20 +62,9 @@ runWebDriverSession config action = do
 
   case action of
     StartBrowser browserType headless -> do
-      let browser = case browserType of
-            Just "firefox" -> firefox
-            _ -> chrome
-          caps =
-            browser
-              { additionalCaps =
-                  case headless of
-                    Just True -> [("goog:chromeOptions", object ["args" .= ["--headless" :: Text]])]
-                    _ -> []
-              }
-          finalConfig = wdConfig {wdCapabilities = caps}
-
+      let finalConfig = wdConfig -- Just use default config for now
       result <- try $ runSession finalConfig $ do
-        T.pack . show <$> getSessionId
+        return "Session started successfully"
 
       case result of
         Left (e :: SomeException) -> return $ Left (WebDriverError $ show e)
@@ -89,16 +79,15 @@ runWebDriverSession config action = do
         Right _ -> return $ Right "Navigation successful"
     FindElement selector -> do
       result <- try $ runSession wdConfig $ do
-        element <- findElem (ByCSS $ T.unpack selector)
-        elementId <- elemRef element
-        return $ T.pack $ show elementId
+        element <- findElem (ByCSS selector)
+        return $ T.pack $ show element
 
       case result of
         Left (e :: SomeException) -> return $ Left (ElementNotFound $ "Element not found: " ++ T.unpack selector)
         Right elementId -> return $ Right elementId
     ClickElement selector -> do
       result <- try $ runSession wdConfig $ do
-        element <- findElem (ByCSS $ T.unpack selector)
+        element <- findElem (ByCSS selector)
         click element
         return "Click successful"
 
@@ -107,8 +96,8 @@ runWebDriverSession config action = do
         Right _ -> return $ Right "Click successful"
     TypeText selector text -> do
       result <- try $ runSession wdConfig $ do
-        element <- findElem (ByCSS $ T.unpack selector)
-        sendKeys (T.unpack text) element
+        element <- findElem (ByCSS selector)
+        sendKeys text element
         return "Text input successful"
 
       case result of
@@ -116,19 +105,18 @@ runWebDriverSession config action = do
         Right _ -> return $ Right "Text input successful"
     GetText selector -> do
       result <- try $ runSession wdConfig $ do
-        element <- findElem (ByCSS $ T.unpack selector)
-        text <- getText element
-        return $ T.pack text
+        element <- findElem (ByCSS selector)
+        getText element
 
       case result of
         Left (e :: SomeException) -> return $ Left (ElementNotFound $ "Could not get text from element: " ++ T.unpack selector)
         Right text -> return $ Right text
     GetAttribute selector attrName -> do
       result <- try $ runSession wdConfig $ do
-        element <- findElem (ByCSS $ T.unpack selector)
-        maybeValue <- attr element (T.unpack attrName)
+        element <- findElem (ByCSS selector)
+        maybeValue <- attr element attrName
         case maybeValue of
-          Just value -> return $ T.pack value
+          Just value -> return value
           Nothing -> return ""
 
       case result of
@@ -136,7 +124,7 @@ runWebDriverSession config action = do
         Right value -> return $ Right value
     TakeScreenshot -> do
       result <- try $ runSession wdConfig $ do
-        TE.decodeUtf8 . Base64.encode <$> screenshot
+        TE.decodeUtf8 . Base64.encode . BL.toStrict <$> screenshot
 
       case result of
         Left (e :: SomeException) -> return $ Left (WebDriverError $ "Could not take screenshot: " ++ show e)

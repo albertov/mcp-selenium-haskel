@@ -54,16 +54,12 @@ library
   build-depends:
     base,
     aeson,
-    aeson-schema,
     text,
-    containers,
-    stm,
     bytestring,
     base64-bytestring >= 1.2 && < 1.3,
-    hs-mcp,
+    unordered-containers,
     webdriver,
-    transformers,
-    mtl,
+    hs-mcp,
 
 test-suite mcp-selenium-test
   type: exitcode-stdio-1.0
