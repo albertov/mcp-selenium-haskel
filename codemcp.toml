@@ -33,8 +33,6 @@ command = ["./run_hoogle.sh"]
 doc = """
 Use Hoogle to seach symbols in available dependencies.
 
-Searches
-
 Before explaining the syntax of searches, we first give a list of example
 searches with their meaning:
 
