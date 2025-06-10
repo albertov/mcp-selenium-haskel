@@ -37,7 +37,7 @@ import GHC.Generics (Generic)
 import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox)
 import qualified Test.WebDriver as WD
 import qualified Test.WebDriver.Commands as WDC
-import Test.WebDriver.Config (WDConfig, defaultConfig, mkSession, wdCapabilities)
+import Test.WebDriver.Config (mkSession)
 import Test.WebDriver.Session (WDSession)
 
 -- | Browser type enumeration
@@ -85,16 +85,16 @@ locatorToBy (ByClass t) = WDC.ByClass t
 
 -- | Create WebDriver config for given browser and options
 createWebDriverConfig :: Browser -> BrowserOptions -> WDConfig
-createWebDriverConfig browser opts =
-  let baseConfig = case browser of
-        Chrome -> defaultConfig {wdCapabilities = defaultCaps {browser = WD.chrome}}
-        Firefox -> defaultConfig {wdCapabilities = defaultCaps {browser = WD.firefox}}
+createWebDriverConfig browserType opts =
+  let baseConfig = case browserType of
+        Chrome -> defaultConfig {wdCapabilities = defaultCaps {WD.browser = WD.chrome}}
+        Firefox -> defaultConfig {wdCapabilities = defaultCaps {WD.browser = WD.firefox}}
       chromeOpts = case arguments opts of
         Just args ->
           ["--" ++ T.unpack arg | arg <- args]
             ++ ["--headless" | headless opts == Just True]
         Nothing -> ["--headless" | headless opts == Just True]
-   in case browser of
+   in case browserType of
         Chrome ->
           baseConfig
             { wdCapabilities =
@@ -110,10 +110,10 @@ createWebDriverConfig browser opts =
 
 -- | Initialize a new WebDriver session
 initializeSession :: Browser -> BrowserOptions -> IO SeleniumSession
-initializeSession browser opts = do
-  let config = createWebDriverConfig browser opts
+initializeSession browserType opts = do
+  let config = createWebDriverConfig browserType opts
   session <- mkSession config
-  return $ SeleniumSession browser session
+  return $ SeleniumSession browserType session
 
 -- | Close the WebDriver session
 closeSeleniumSession :: SeleniumSession -> IO ()

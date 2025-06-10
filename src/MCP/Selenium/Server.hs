@@ -8,15 +8,12 @@ module MCP.Selenium.Server
   )
 where
 
-import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, Value (..), decode, object, parseJSON, withObject, (.:), (.=))
+import Data.Aeson (FromJSON, object, parseJSON, (.=))
 import Data.Aeson.Key (fromText)
-import Data.Aeson.Types (Parser, parseMaybe)
+import Data.Aeson.Types (parseMaybe)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import GHC.Generics (Generic)
 import MCP.Selenium.Tools
-import MCP.Selenium.WebDriver
 import Network.MCP.Server (Server, createServer, registerToolCallHandler, registerTools)
 import Network.MCP.Server.StdIO (runServerWithSTDIO)
 import Network.MCP.Server.Types (ToolCallHandler)

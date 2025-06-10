@@ -38,15 +38,14 @@ module MCP.Selenium.Tools
   )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVar, newTVarIO, readTVar, readTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, Value (..), object, (.=))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import MCP.Selenium.WebDriver
-import Network.MCP.Server.Types (ToolCallHandler)
-import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Tool (..), ToolContent (..), ToolContentType (..))
+import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType (..))
 
 -- | Tool parameter types
 data StartBrowserParams = StartBrowserParams
@@ -402,5 +401,5 @@ handleCloseSession tools _ = do
 -- | Create selenium tools instance
 createSeleniumTools :: IO SeleniumTools
 createSeleniumTools = do
-  sessionVar <- newTVarIO Nothing
-  return $ SeleniumTools sessionVar
+  sessionState <- newTVarIO Nothing
+  return $ SeleniumTools sessionState

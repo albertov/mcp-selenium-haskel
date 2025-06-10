@@ -2,9 +2,7 @@
 
 module Main (main) where
 
-import Control.Exception (SomeException, catch)
 import Data.Aeson (decode, encode)
-import qualified Data.Text as T
 import MCP.Selenium.Server
 import MCP.Selenium.Tools
 import MCP.Selenium.WebDriver
@@ -16,8 +14,8 @@ main = hspec $ do
   describe "MCP.Selenium.WebDriver" $ do
     describe "Browser" $ do
       it "can be encoded and decoded as JSON" $ do
-        let browser = Chrome
-        decode (encode browser) `shouldBe` Just browser
+        let browserType = Chrome
+        decode (encode browserType) `shouldBe` Just browserType
 
       it "supports both Chrome and Firefox" $ do
         encode Chrome `shouldNotBe` encode Firefox
