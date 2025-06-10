@@ -90,15 +90,28 @@ class ServiceManager:
         print("Running integration tests...")
 
         try:
-            # Build the Haskell executable first
-            print("Building mcp-selenium-hs executable...")
-            build_result = subprocess.run(["cabal", "build", "mcp-selenium-hs"],
-                                        capture_output=True, text=True)
+            # Check if executable already exists before building
+            import glob
 
-            if build_result.returncode != 0:
-                print("Failed to build mcp-selenium-hs:")
-                print(build_result.stderr)
-                return 1
+            # Look for existing executable
+            exec_pattern = "dist-newstyle/build/x86_64-linux/ghc-*/mcp-selenium-*/x/mcp-selenium-hs/build/mcp-selenium-hs/mcp-selenium-hs"
+            print(f"DEBUG: Looking for executables with pattern: {exec_pattern}")
+            existing_executables = glob.glob(exec_pattern)
+            print(f"DEBUG: Found executables: {existing_executables}")
+
+            if existing_executables:
+                print(f"Found existing executable: {existing_executables[0]}")
+                print("Skipping build to save time...")
+            else:
+                # Build the Haskell executable only if it doesn't exist
+                print("Building mcp-selenium-hs executable...")
+                build_result = subprocess.run(["cabal", "build", "mcp-selenium-hs"],
+                                            capture_output=True, text=True)
+
+                if build_result.returncode != 0:
+                    print("Failed to build mcp-selenium-hs:")
+                    print(build_result.stderr)
+                    return 1
 
             # Run pytest on the integration tests
             cmd = [

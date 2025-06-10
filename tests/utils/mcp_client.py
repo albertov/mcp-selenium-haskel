@@ -19,24 +19,33 @@ class MCPSeleniumClient:
         self._session_context_manager = None
 
     async def __aenter__(self):
+        print(f"DEBUG: Starting MCP client with executable: {self.executable_path}")
+
         # Configure server parameters for Haskell executable
         server_params = StdioServerParameters(
             command=self.executable_path,
             args=[],  # Add any required args for your Haskell executable
             env=None
         )
+        print("DEBUG: Configured server parameters")
 
         # Connect to server
+        print("DEBUG: Connecting to server...")
         self._stdio_context_manager = stdio_client(server_params)
         stdio_transport = await self._stdio_context_manager.__aenter__()
         self.stdio, self.write = stdio_transport
+        print("DEBUG: Connected to server")
 
         # Create session
+        print("DEBUG: Creating session...")
         self._session_context_manager = ClientSession(self.stdio, self.write)
         self.session = await self._session_context_manager.__aenter__()
+        print("DEBUG: Session created")
 
         # Initialize connection
+        print("DEBUG: Initializing connection...")
         await self.session.initialize()
+        print("DEBUG: Connection initialized successfully")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -54,7 +63,9 @@ class MCPSeleniumClient:
 
     async def list_tools(self) -> List[str]:
         """Get list of available tools from server"""
+        print("DEBUG: Calling list_tools...")
         response = await self.session.list_tools()
+        print(f"DEBUG: Got tools response: {[tool.name for tool in response.tools]}")
         return [tool.name for tool in response.tools]
 
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
