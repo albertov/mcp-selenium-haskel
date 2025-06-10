@@ -393,7 +393,7 @@ handleCloseSession tools _ = do
     Just session ->
       catch
         ( do
-            closeSession session
+            closeSeleniumSession session
             atomically $ writeTVar (sessionVar tools) Nothing
             return $ successResult "Browser session closed successfully"
         )
