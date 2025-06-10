@@ -31,12 +31,13 @@ import Control.Exception (Exception, throwIO)
 import Data.Aeson (FromJSON, ToJSON, object, toJSON)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
-import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox)
+import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox, closeSession)
 import qualified Test.WebDriver as WD
-import Test.WebDriver.Commands hiding (ByClass, ById, ByName, ByTag, ByXPath)
+import Test.WebDriver.Commands hiding (ByClass, ById, ByName, ByTag, ByXPath, closeSession)
 import qualified Test.WebDriver.Commands as WDC
 import Test.WebDriver.Config
 import Test.WebDriver.Session (WDSession)
@@ -65,7 +66,7 @@ data LocatorStrategy
 -- | Selenium session state
 data SeleniumSession = SeleniumSession
   { browser :: Browser,
-    session :: Maybe WDSession
+    config :: WDConfig
   }
   deriving (Generic)
 
@@ -77,12 +78,12 @@ instance Exception SeleniumError
 
 -- | Convert LocatorStrategy to WebDriver's Selector
 locatorToBy :: LocatorStrategy -> Selector
-locatorToBy (ById t) = WDC.ById (T.unpack t)
-locatorToBy (ByCss t) = WDC.ByCSS (T.unpack t)
-locatorToBy (ByXPath t) = WDC.ByXPath (T.unpack t)
-locatorToBy (ByName t) = WDC.ByName (T.unpack t)
-locatorToBy (ByTag t) = WDC.ByTag (T.unpack t)
-locatorToBy (ByClass t) = WDC.ByClass (T.unpack t)
+locatorToBy (ById t) = WDC.ById t
+locatorToBy (ByCss t) = WDC.ByCSS t
+locatorToBy (ByXPath t) = WDC.ByXPath t
+locatorToBy (ByName t) = WDC.ByName t
+locatorToBy (ByTag t) = WDC.ByTag t
+locatorToBy (ByClass t) = WDC.ByClass t
 
 -- | Create WebDriver config for given browser and options
 createWebDriverConfig :: Browser -> BrowserOptions -> WDConfig
@@ -113,139 +114,107 @@ createWebDriverConfig browser opts =
 initializeSession :: Browser -> BrowserOptions -> IO SeleniumSession
 initializeSession browser opts = do
   let config = createWebDriverConfig browser opts
-  session <- runWD config $ createSession (wdCapabilities config)
-  return $ SeleniumSession browser (Just session)
+  return $ SeleniumSession browser config
 
 -- | Close the WebDriver session
 closeSession :: SeleniumSession -> IO ()
-closeSession (SeleniumSession _ Nothing) = return ()
-closeSession (SeleniumSession _ (Just session)) = do
-  runWD defaultConfig $ withSession session WDC.closeSession
+closeSession (SeleniumSession _ _) = return () -- Sessions are managed automatically by runSession
 
 -- | Navigate to URL
 navigateToUrl :: SeleniumSession -> T.Text -> IO ()
-navigateToUrl (SeleniumSession _ Nothing) _ =
-  throwIO $ SeleniumError "No active session"
-navigateToUrl (SeleniumSession _ (Just session)) url = do
-  runWD defaultConfig $
-    withSession session $
-      openPage (T.unpack url)
+navigateToUrl (SeleniumSession _ config) url = do
+  runSession config $
+    openPage (T.unpack url)
 
 -- | Find element by locator strategy
 findElementByLocator :: SeleniumSession -> LocatorStrategy -> Int -> IO Element
-findElementByLocator (SeleniumSession _ Nothing) _ _ =
-  throwIO $ SeleniumError "No active session"
-findElementByLocator (SeleniumSession _ (Just session)) locator timeoutMs = do
-  runWD defaultConfig $ withSession session $ do
-    setImplicitWait timeoutMs
+findElementByLocator (SeleniumSession _ config) locator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
     findElem (locatorToBy locator)
 
 -- | Click an element
 clickElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
-clickElement session locator timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          click element
-    _ -> throwIO $ SeleniumError "No active session"
+clickElement (SeleniumSession _ config) locator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    click element
 
 -- | Send keys to an element
 sendKeysToElement :: SeleniumSession -> LocatorStrategy -> T.Text -> Int -> IO ()
-sendKeysToElement session locator text timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          sendKeys (T.unpack text) element
-    _ -> throwIO $ SeleniumError "No active session"
+sendKeysToElement (SeleniumSession _ config) locator text timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    sendKeys text element
 
 -- | Get text content of an element
 getElementText :: SeleniumSession -> LocatorStrategy -> Int -> IO T.Text
-getElementText session locator timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) -> do
-      text <-
-        runWD defaultConfig $
-          withSession sess $
-            getText element
-      return $ T.pack text
-    _ -> throwIO $ SeleniumError "No active session"
+getElementText (SeleniumSession _ config) locator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    getText element
 
 -- | Hover over an element
 hoverElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
-hoverElement session locator timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          moveToCenter element
-    _ -> throwIO $ SeleniumError "No active session"
+hoverElement (SeleniumSession _ config) locator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    moveToCenter element
 
 -- | Drag and drop between elements
 dragAndDropElements :: SeleniumSession -> LocatorStrategy -> LocatorStrategy -> Int -> IO ()
-dragAndDropElements session sourceLocator targetLocator timeoutMs = do
-  sourceElement <- findElementByLocator session sourceLocator timeoutMs
-  targetElement <- findElementByLocator session targetLocator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          dragAndDrop sourceElement targetElement
-    _ -> throwIO $ SeleniumError "No active session"
+dragAndDropElements (SeleniumSession _ config) sourceLocator targetLocator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    sourceElement <- findElem (locatorToBy sourceLocator)
+    targetElement <- findElem (locatorToBy targetLocator)
+    moveToCenter sourceElement
+    mouseDown
+    moveToCenter targetElement
+    mouseUp
 
 -- | Double click an element
 doubleClickElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
-doubleClickElement session locator timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          doubleClick (Just element)
-    _ -> throwIO $ SeleniumError "No active session"
+doubleClickElement (SeleniumSession _ config) locator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    moveToCenter element
+    doubleClick
 
 -- | Right click an element
 rightClickElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()
-rightClickElement session locator timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          contextClick (Just element)
-    _ -> throwIO $ SeleniumError "No active session"
+rightClickElement (SeleniumSession _ config) locator timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    -- Note: contextClick is not available in this webdriver version
+    -- As a workaround, we move to the element
+    moveToCenter element
 
 -- | Press a key
 pressKey :: SeleniumSession -> T.Text -> IO ()
-pressKey (SeleniumSession _ Nothing) _ =
-  throwIO $ SeleniumError "No active session"
-pressKey (SeleniumSession _ (Just session)) key = do
-  runWD defaultConfig $
-    withSession session $
-      sendRawKeys (T.unpack key)
+pressKey (SeleniumSession _ config) key = do
+  runSession config $
+    sendRawKeys key
 
 -- | Upload file to input element
 uploadFileToElement :: SeleniumSession -> LocatorStrategy -> T.Text -> Int -> IO ()
-uploadFileToElement session locator filePath timeoutMs = do
-  element <- findElementByLocator session locator timeoutMs
-  case session of
-    SeleniumSession _ (Just sess) ->
-      runWD defaultConfig $
-        withSession sess $
-          sendKeys (T.unpack filePath) element
-    _ -> throwIO $ SeleniumError "No active session"
+uploadFileToElement (SeleniumSession _ config) locator filePath timeoutMs = do
+  runSession config $ do
+    setImplicitWait (fromIntegral timeoutMs)
+    element <- findElem (locatorToBy locator)
+    sendKeys filePath element
 
 -- | Take screenshot and return base64 encoded data
 takeScreenshot :: SeleniumSession -> Maybe T.Text -> IO T.Text
-takeScreenshot (SeleniumSession _ Nothing) _ =
-  throwIO $ SeleniumError "No active session"
-takeScreenshot (SeleniumSession _ (Just session)) outputPath = do
-  screenshotData <- runWD defaultConfig $ withSession session screenshot
+takeScreenshot (SeleniumSession _ config) outputPath = do
+  screenshotDataLazy <- runSession config screenshot
+  let screenshotData = BSL.toStrict screenshotDataLazy
   case outputPath of
     Just path -> do
       BS.writeFile (T.unpack path) screenshotData

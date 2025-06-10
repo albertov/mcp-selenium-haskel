@@ -17,13 +17,10 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import MCP.Selenium.Tools
 import MCP.Selenium.WebDriver
-import Network.MCP.Server (Server (..), addTool, emptyServer, runStdioServer)
-import Network.MCP.Server.Types
-  ( CallToolRequest (..),
-    CallToolResult (..),
-    Tool (..),
-    ToolCallHandler,
-  )
+import Network.MCP.Server (Server (..))
+import Network.MCP.Server.StdIO (runServerWithSTDIO)
+import Network.MCP.Server.Types (ToolCallHandler)
+import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Tool (..), ToolContent (..), ToolContentType (..))
 
 -- | Create a complete Selenium MCP server with all tools
 createSeleniumServer :: IO Server
@@ -58,11 +55,7 @@ createHandler ::
 createHandler tools handler request = do
   case parseMaybe parseParams (arguments request) of
     Nothing ->
-      return $
-        CallToolResult
-          { content = [object ["type" .= ("text" :: T.Text), "text" .= ("Invalid parameters" :: T.Text)]],
-            isError = Just True
-          }
+      return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
     Just params -> handler tools params
   where
     parseParams :: Value -> Parser params
@@ -467,4 +460,4 @@ closeSessionTool =
 runSeleniumServer :: IO ()
 runSeleniumServer = do
   server <- createSeleniumServer
-  runStdioServer server
+  runServerWithSTDIO server
