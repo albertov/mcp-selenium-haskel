@@ -21,6 +21,10 @@ module MCP.Selenium.Tools
     UploadFileParams (..),
     TakeScreenshotParams (..),
     CloseSessionParams (..),
+    GetConsoleLogsParams (..),
+    GetAvailableLogTypesParams (..),
+    InjectConsoleLoggerParams (..),
+    GetInjectedConsoleLogsParams (..),
     createSeleniumTools,
     handleStartBrowser,
     handleNavigate,
@@ -36,12 +40,16 @@ module MCP.Selenium.Tools
     handleUploadFile,
     handleTakeScreenshot,
     handleCloseSession,
+    handleGetConsoleLogs,
+    handleGetAvailableLogTypes,
+    handleInjectConsoleLogger,
+    handleGetInjectedConsoleLogs,
   )
 where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON)
+import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON, (.=))
 import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
@@ -145,6 +153,24 @@ newtype TakeScreenshotParams = TakeScreenshotParams
 data CloseSessionParams = CloseSessionParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+-- Console logging parameter types
+data GetConsoleLogsParams = GetConsoleLogsParams
+  { logLevel :: Maybe T.Text,
+    maxEntries :: Maybe Int
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data GetAvailableLogTypesParams = GetAvailableLogTypesParams
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data InjectConsoleLoggerParams = InjectConsoleLoggerParams
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+newtype GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
+  { clear :: Maybe Bool
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
 -- | Selenium tools container
 newtype SeleniumTools = SeleniumTools
   { sessionVar :: TVar (Maybe SeleniumSession)
@@ -172,9 +198,12 @@ errorResult msg =
 
 -- | Handle start_browser tool
 handleStartBrowser :: SeleniumTools -> StartBrowserParams -> IO CallToolResult
-handleStartBrowser tools (StartBrowserParams browserVal optionsVal _) = do
+handleStartBrowser tools (StartBrowserParams browserVal optionsVal enableLoggingVal) = do
   hPutStrLn stderr "HANDLER: start_browser called" >> hFlush stderr
-  let finalOpts = fromMaybe (BrowserOptions Nothing Nothing) optionsVal
+  let loggingEnabled = fromMaybe False enableLoggingVal
+      finalOpts = case optionsVal of
+        Nothing -> BrowserOptions Nothing Nothing (Just loggingEnabled)
+        Just opts -> opts {MCP.Selenium.WebDriver.enableLogging = Just loggingEnabled}
   catch
     ( do
         readTVarIO (sessionVar tools) >>= \case
@@ -182,7 +211,11 @@ handleStartBrowser tools (StartBrowserParams browserVal optionsVal _) = do
           Nothing -> pure ()
         session <- initializeSession browserVal finalOpts
         atomically $ writeTVar (sessionVar tools) (Just session)
-        return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
+        let message =
+              if loggingEnabled
+                then "Browser " <> T.pack (show browserVal) <> " started successfully with logging enabled"
+                else "Browser " <> T.pack (show browserVal) <> " started successfully"
+        return $ successResult message
     )
     ( \e -> do
         return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException))
@@ -279,7 +312,7 @@ handleGetElementText tools (GetElementTextParams byVal valueVal timeoutVal) = do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
             elementText <- getElementText session locator timeoutMs
-            return $ successResult $ elementText
+            return $ successResult elementText
         )
         (\e -> return $ errorResult $ "Get text failed: " <> T.pack (show (e :: SomeException)))
 
@@ -424,6 +457,75 @@ handleCloseSession tools _ = do
             return $ successResult "Browser session closed successfully"
         )
         (\e -> return $ errorResult $ "Close session failed: " <> T.pack (show (e :: SomeException)))
+
+-- | Handle get_console_logs tool
+handleGetConsoleLogs :: SeleniumTools -> GetConsoleLogsParams -> IO CallToolResult
+handleGetConsoleLogs tools (GetConsoleLogsParams logLevelVal maxEntriesVal) = do
+  sessionMaybe <- readTVarIO (sessionVar tools)
+  case sessionMaybe of
+    Nothing -> return $ errorResult "No active browser session"
+    Just session ->
+      catch
+        ( do
+            logs <- getConsoleLogs session logLevelVal maxEntriesVal
+            let formattedLogs =
+                  map
+                    ( \(LogEntry timestamp level message) ->
+                        object
+                          [ "level" .= show level,
+                            "message" .= message,
+                            "timestamp" .= timestamp
+                          ]
+                    )
+                    logs
+                responseText = TE.decodeUtf8 $ BSL.toStrict $ encode $ object ["logs" .= formattedLogs]
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+        )
+        (\e -> return $ errorResult $ "Get console logs failed: " <> T.pack (show (e :: SomeException)))
+
+-- | Handle get_available_log_types tool
+handleGetAvailableLogTypes :: SeleniumTools -> GetAvailableLogTypesParams -> IO CallToolResult
+handleGetAvailableLogTypes tools _ = do
+  sessionMaybe <- readTVarIO (sessionVar tools)
+  case sessionMaybe of
+    Nothing -> return $ errorResult "No active browser session"
+    Just session ->
+      catch
+        ( do
+            logTypes <- getAvailableLogTypes session
+            let responseText = TE.decodeUtf8 $ BSL.toStrict $ encode $ object ["logTypes" .= logTypes]
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+        )
+        (\e -> return $ errorResult $ "Get available log types failed: " <> T.pack (show (e :: SomeException)))
+
+-- | Handle inject_console_logger tool
+handleInjectConsoleLogger :: SeleniumTools -> InjectConsoleLoggerParams -> IO CallToolResult
+handleInjectConsoleLogger tools _ = do
+  sessionMaybe <- readTVarIO (sessionVar tools)
+  case sessionMaybe of
+    Nothing -> return $ errorResult "No active browser session"
+    Just session ->
+      catch
+        ( do
+            injectConsoleLogger session
+            return $ successResult "Console logger injected successfully"
+        )
+        (\e -> return $ errorResult $ "Inject console logger failed: " <> T.pack (show (e :: SomeException)))
+
+-- | Handle get_injected_console_logs tool
+handleGetInjectedConsoleLogs :: SeleniumTools -> GetInjectedConsoleLogsParams -> IO CallToolResult
+handleGetInjectedConsoleLogs tools (GetInjectedConsoleLogsParams clearVal) = do
+  sessionMaybe <- readTVarIO (sessionVar tools)
+  case sessionMaybe of
+    Nothing -> return $ errorResult "No active browser session"
+    Just session ->
+      catch
+        ( do
+            let shouldClear = fromMaybe False clearVal
+            logsJson <- getInjectedConsoleLogs session shouldClear
+            return $ CallToolResult [ToolContent TextualContent (Just logsJson)] False
+        )
+        (\e -> return $ errorResult $ "Get injected console logs failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Create selenium tools instance
 createSeleniumTools :: IO SeleniumTools

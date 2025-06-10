@@ -22,11 +22,11 @@ main = hspec $ do
 
     describe "BrowserOptions" $ do
       it "can be encoded and decoded as JSON" $ do
-        let browserOpts = BrowserOptions (Just True) (Just ["--no-sandbox"])
+        let browserOpts = BrowserOptions (Just True) (Just ["--no-sandbox"]) Nothing
         decode (encode browserOpts) `shouldBe` Just browserOpts
 
       it "handles empty options" $ do
-        let browserOpts = BrowserOptions Nothing Nothing
+        let browserOpts = BrowserOptions Nothing Nothing Nothing
         decode (encode browserOpts) `shouldBe` Just browserOpts
 
     describe "LocatorStrategy" $ do
@@ -48,7 +48,7 @@ main = hspec $ do
   describe "MCP.Selenium.Tools" $ do
     describe "StartBrowserParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = StartBrowserParams Chrome (Just $ BrowserOptions (Just True) Nothing) Nothing Nothing
+        let params = StartBrowserParams Chrome (Just $ BrowserOptions (Just True) Nothing Nothing) Nothing
         decode (encode params) `shouldBe` Just params
 
     describe "NavigateParams" $ do

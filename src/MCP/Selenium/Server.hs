@@ -60,7 +60,11 @@ createSeleniumServer = do
           pressKeyTool,
           uploadFileTool,
           takeScreenshotTool,
-          closeSessionTool
+          closeSessionTool,
+          getConsoleLogsTool,
+          getAvailableLogTypesTool,
+          injectConsoleLoggerTool,
+          getInjectedConsoleLogsTool
         ]
 
   registerTools server allTools
@@ -91,6 +95,10 @@ createHandler tools request = do
     "upload_file" -> parseAndHandle handleUploadFile
     "take_screenshot" -> parseAndHandle handleTakeScreenshot
     "close_session" -> parseAndHandle handleCloseSession
+    "get_console_logs" -> parseAndHandle handleGetConsoleLogs
+    "get_available_log_types" -> parseAndHandle handleGetAvailableLogTypes
+    "inject_console_logger" -> parseAndHandle handleInjectConsoleLogger
+    "get_injected_console_logs" -> parseAndHandle handleGetInjectedConsoleLogs
     _ -> return $ CallToolResult [ToolContent TextualContent (Just "Unknown tool")] True
   where
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
@@ -452,6 +460,67 @@ closeSessionTool =
       toolInputSchema =
         [aesonQQ|{
         "type": "object"
+      }|]
+    }
+
+getConsoleLogsTool :: Tool
+getConsoleLogsTool =
+  Tool
+    { toolName = "get_console_logs",
+      toolDescription = Just "Retrieves JavaScript console logs from the browser",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "logLevel": {
+            "type": "string",
+            "enum": ["ALL", "SEVERE", "WARNING", "INFO", "DEBUG"],
+            "description": "Filter logs by level (default: ALL)"
+          },
+          "maxEntries": {
+            "type": "number",
+            "description": "Maximum number of log entries to return"
+          }
+        }
+      }|]
+    }
+
+getAvailableLogTypesTool :: Tool
+getAvailableLogTypesTool =
+  Tool
+    { toolName = "get_available_log_types",
+      toolDescription = Just "Retrieves the available log types supported by the current browser",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object"
+      }|]
+    }
+
+injectConsoleLoggerTool :: Tool
+injectConsoleLoggerTool =
+  Tool
+    { toolName = "inject_console_logger",
+      toolDescription = Just "Injects a script to capture all console messages including console.log, console.warn, etc.",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object"
+      }|]
+    }
+
+getInjectedConsoleLogsTool :: Tool
+getInjectedConsoleLogsTool =
+  Tool
+    { toolName = "get_injected_console_logs",
+      toolDescription = Just "Retrieves console logs captured by the injected logger script",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "clear": {
+            "type": "boolean",
+            "description": "Clear the captured logs after retrieving them (default: false)"
+          }
+        }
       }|]
     }
 

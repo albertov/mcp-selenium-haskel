@@ -10,6 +10,8 @@ module MCP.Selenium.WebDriver
     BrowserOptions (..),
     Browser (..),
     LocatorStrategy (..),
+    LogEntry (..),
+    LogLevel (..),
     initializeSession,
     closeSeleniumSession,
     navigateToUrl,
@@ -24,6 +26,10 @@ module MCP.Selenium.WebDriver
     pressKey,
     uploadFileToElement,
     takeScreenshot,
+    getConsoleLogs,
+    getAvailableLogTypes,
+    injectConsoleLogger,
+    getInjectedConsoleLogs,
   )
 where
 
@@ -38,6 +44,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import qualified Test.WebDriver as WD
+import Test.WebDriver.Commands (LogEntry (..), LogLevel (..), LogType, executeJS, getLogs)
 import Test.WebDriver.Session (WDSession (..), getSession)
 
 -- | Browser type enumeration
@@ -60,7 +67,8 @@ instance FromJSON Browser where
 -- | Browser configuration options
 data BrowserOptions = BrowserOptions
   { headless :: Maybe Bool,
-    arguments :: Maybe [T.Text]
+    arguments :: Maybe [T.Text],
+    enableLogging :: Maybe Bool
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -238,3 +246,67 @@ takeScreenshot (SeleniumSession _ session) outputPath = do
       BS.writeFile (T.unpack path) screenshotData
       return $ T.pack $ T.unpack path ++ " saved"
     Nothing -> return $ TE.decodeUtf8 $ B64.encode screenshotData
+
+-- | Get console logs from the browser
+getConsoleLogs :: SeleniumSession -> Maybe T.Text -> Maybe Int -> IO [LogEntry]
+getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
+  allLogs <- WD.runWD session $ getLogs "browser"
+  let filteredLogs = case logLevelFilter of
+        Nothing -> allLogs
+        Just levelStr -> filter (\(LogEntry _ level _) -> T.pack (show level) == levelStr) allLogs
+      limitedLogs = case maxEntries of
+        Nothing -> filteredLogs
+        Just n -> take n (reverse filteredLogs)
+  return limitedLogs
+
+-- | Get available log types for the current session
+getAvailableLogTypes :: SeleniumSession -> IO [LogType]
+getAvailableLogTypes _ = do
+  -- Since getAvailableLogTypes is not available in this version of webdriver,
+  -- return the common log types that are typically supported
+  return ["browser", "driver", "performance", "server", "client"]
+
+-- | Inject JavaScript console logger to capture console messages
+injectConsoleLogger :: SeleniumSession -> IO ()
+injectConsoleLogger (SeleniumSession _ session) = do
+  WD.runWD session $ do
+    (_ :: Maybe ()) <-
+      executeJS [] $
+        "if (!window._consoleLogsCaptured) {\
+        \  window._consoleLogsCaptured = [];\
+        \  window._originalConsole = {\
+        \    log: console.log,\
+        \    warn: console.warn,\
+        \    error: console.error,\
+        \    info: console.info,\
+        \    debug: console.debug\
+        \  };\
+        \  ['log', 'warn', 'error', 'info', 'debug'].forEach(function(method) {\
+        \    console[method] = function() {\
+        \      window._originalConsole[method].apply(console, arguments);\
+        \      window._consoleLogsCaptured.push({\
+        \        level: method,\
+        \        message: Array.from(arguments).map(function(arg) {\
+        \          return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);\
+        \        }).join(' '),\
+        \        timestamp: Date.now()\
+        \      });\
+        \    };\
+        \  });\
+        \} else { }"
+    return ()
+
+-- | Get console logs captured by the injected logger
+getInjectedConsoleLogs :: SeleniumSession -> Bool -> IO T.Text
+getInjectedConsoleLogs (SeleniumSession _ session) clearLogs = do
+  result <- WD.runWD session $ do
+    (r :: Maybe T.Text) <-
+      executeJS [] $
+        "var logs = window._consoleLogsCaptured || [];\
+        \"
+          <> (if clearLogs then "window._consoleLogsCaptured = [];" else "")
+          <> "return JSON.stringify(logs);"
+    return r
+  case result of
+    Just s -> return s
+    Nothing -> return "[]"
