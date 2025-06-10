@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | WebDriver operations wrapper for Selenium automation
@@ -42,10 +43,13 @@ import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Read as TR
 import GHC.Generics (Generic)
+import System.Environment (lookupEnv)
 import qualified Test.WebDriver as WD
 import Test.WebDriver.Commands (LogEntry (..), LogLevel (..), LogType, executeJS, getLogs)
 import Test.WebDriver.Session (WDSession (..), getSession)
+import Text.RawString.QQ (r)
 
 -- | Browser type enumeration
 data Browser = Chrome | Firefox
@@ -105,15 +109,18 @@ locatorToBy (ByTag t) = WD.ByTag t
 locatorToBy (ByClass t) = WD.ByClass t
 
 -- | Create WebDriver config for given browser and options
-createWebDriverConfig :: Browser -> BrowserOptions -> WD.WDConfig
-createWebDriverConfig browserType opts =
-  let baseConfig = case browserType of
+createWebDriverConfig :: Browser -> BrowserOptions -> IO WD.WDConfig
+createWebDriverConfig browserType opts = do
+  -- Read host and port from environment variables with defaults
+  hostStr <- fromMaybe "127.0.0.1" <$> lookupEnv "SELENIUM_HOST"
+  portStr <- fromMaybe "4444" <$> lookupEnv "SELENIUM_PORT"
+  let port = case TR.decimal (T.pack portStr) of
+        Right (p, _) -> p
+        Left _ -> 4444 -- Default port if parsing fails
+      baseConfig = case browserType of
         Chrome -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.chrome}}
         Firefox -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.firefox}}
-      -- Ensure we're using the default Selenium server URL (localhost:4444)
-      --FIXME: Make configurable. This needs to be read from environment
-      -- variables and default to these values if missing from environ
-      configWithHost = baseConfig {WD.wdHost = "127.0.0.1", WD.wdPort = 4444}
+      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port}
       chromeCapabilities :: WD.Capabilities
       chromeCapabilities =
         WD.defaultCaps
@@ -130,17 +137,17 @@ createWebDriverConfig browserType opts =
                   chromeExperimentalOptions = mempty
                 }
           }
-   in case browserType of
-        Chrome ->
-          configWithHost
-            { WD.wdCapabilities = chromeCapabilities
-            }
-        Firefox -> configWithHost
+  return $ case browserType of
+    Chrome ->
+      configWithHost
+        { WD.wdCapabilities = chromeCapabilities
+        }
+    Firefox -> configWithHost
 
 -- | Initialize a new WebDriver session
 initializeSession :: Browser -> BrowserOptions -> IO SeleniumSession
 initializeSession browserType opts = do
-  let config = createWebDriverConfig browserType opts
+  config <- createWebDriverConfig browserType opts
   session <- WD.runSession config getSession
   return $ SeleniumSession browserType session
 
@@ -273,43 +280,45 @@ injectConsoleLogger :: SeleniumSession -> IO ()
 injectConsoleLogger (SeleniumSession _ session) = do
   WD.runWD session $ do
     (_ :: Maybe ()) <-
-      --FIXME: Use raw-strings-qq to clean this string up
-      executeJS [] $
-        "if (!window._consoleLogsCaptured) {\
-        \  window._consoleLogsCaptured = [];\
-        \  window._originalConsole = {\
-        \    log: console.log,\
-        \    warn: console.warn,\
-        \    error: console.error,\
-        \    info: console.info,\
-        \    debug: console.debug\
-        \  };\
-        \  ['log', 'warn', 'error', 'info', 'debug'].forEach(function(method) {\
-        \    console[method] = function() {\
-        \      window._originalConsole[method].apply(console, arguments);\
-        \      window._consoleLogsCaptured.push({\
-        \        level: method,\
-        \        message: Array.from(arguments).map(function(arg) {\
-        \          return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);\
-        \        }).join(' '),\
-        \        timestamp: Date.now()\
-        \      });\
-        \    };\
-        \  });\
-        \} else { }"
+      executeJS
+        []
+        [r|
+if (!window._consoleLogsCaptured) {
+  window._consoleLogsCaptured = [];
+  window._originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+    info: console.info,
+    debug: console.debug
+  };
+  ['log', 'warn', 'error', 'info', 'debug'].forEach(function(method) {
+    console[method] = function() {
+      window._originalConsole[method].apply(console, arguments);
+      window._consoleLogsCaptured.push({
+        level: method,
+        message: Array.from(arguments).map(function(arg) {
+          return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+        }).join(' '),
+        timestamp: Date.now()
+      });
+    };
+  });
+} else { }
+|]
     return ()
 
 -- | Get console logs captured by the injected logger
 getInjectedConsoleLogs :: SeleniumSession -> Bool -> IO T.Text
 getInjectedConsoleLogs (SeleniumSession _ session) clearLogs = do
   result <- WD.runWD session $ do
-    (r :: Maybe T.Text) <-
+    (jsResult :: Maybe T.Text) <-
       executeJS [] $
         "var logs = window._consoleLogsCaptured || [];\
         \"
           <> (if clearLogs then "window._consoleLogsCaptured = [];" else "")
           <> "return JSON.stringify(logs);"
-    return r
+    return jsResult
   case result of
     Just s -> return s
     Nothing -> return "[]"

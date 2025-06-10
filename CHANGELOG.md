@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2025-06-10
+
+### Changed
+- Made WebDriver host and port configurable via environment variables (`SELENIUM_HOST` and `SELENIUM_PORT`)
+- Improved code readability by using raw-strings-qq for JavaScript injection code
+- Replaced escaped JavaScript strings with cleaner raw string literals
+
+### Fixed
+- Resolved FIXMEs related to hardcoded WebDriver configuration and string formatting
+- Fixed name shadowing warning in console logging functionality
+
 ## [2.2.1] - 2025-06-10
 
 ### Fixed
