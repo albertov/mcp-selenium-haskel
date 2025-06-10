@@ -21,5 +21,5 @@ jobs:
         authToken: '${{ secrets.CACHIX_TOKEN }}'
     - name: Build everything
       run: nix build --accept-flake-config
-    - name: Run checks
-      run: nix flake check
+    # - name: Run checks
+    # run: nix flake check

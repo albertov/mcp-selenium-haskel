@@ -58,12 +58,53 @@
           '';
         };
         treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
+        integration-tests = pkgs.writeShellApplication {
+          name = "mcp-selenium-haskell-integration-test";
+          runtimeInputs = with pkgs; [
+            selenium-server-standalone
+            chromium
+            python3
+          ];
+          text =
+            let
+              py_path =
+                with pkgs.python3.pkgs;
+                lib.makeSearchPath "lib/python3.12/site-packages" [
+                  pytest
+                  pytest-asyncio
+                  mcp
+                  pluggy
+                  iniconfig
+                  python-dotenv
+                  anyio
+                  sniffio
+                  typing-extensions
+                  typing-inspection
+                  annotated-types
+                  httpx
+                  httpx-sse
+                  idna
+                  pydantic
+                  pydantic-core
+                  pydantic-settings
+                  starlette
+                  sse-starlette
+                ];
+            in
+            ''
+              export MCP_SELENIUM_EXE=${self.packages.${system}.mcp-selenium-hs}/bin/mcp-selenium-hs
+              export PYTHONPATH="${self}/tests:${py_path}"
+              exec python3 ${self}/orchestrate_integration_tests.py
+            '';
+        };
       in
       pkgs.lib.recursiveUpdate flake {
         legacyPackages = pkgs;
 
-        packages = flake.packages // {
-          default = pkgs.hixProject.projectCross.musl64.hsPkgs.mcp-selenium.components.exes.mcp-selenium-hs;
+        packages = flake.packages // rec {
+          default = mcp-selenium-hs;
+          inherit (pkgs.hixProject.projectCross.musl64.hsPkgs.mcp-selenium.components.exes) mcp-selenium-hs;
+          inherit integration-tests;
         };
 
         formatter = treefmtEval.config.build.wrapper;

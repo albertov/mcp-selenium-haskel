@@ -1,3 +1,4 @@
+import os
 from utils.mcp_client import MCPSeleniumClient
 from utils.html_server import TestHTMLServer
 import pytest
@@ -16,7 +17,8 @@ async def mcp_client() -> AsyncGenerator[MCPSeleniumClient, None]:
     # IMPORTANT: Do not change this!
     # Get the absolute path to run_server.sh relative to the project root
     project_root = Path(__file__).parent.parent.parent
-    executable_path = str(project_root / "run_server.sh")
+    executable_path = os.environ.get('MCP_SELENIUM_EXE',str(project_root /
+                                                            "run_server.sh"))
     print(f"DEBUG: Using executable: {executable_path}")
 
     async with MCPSeleniumClient(executable_path) as client:
