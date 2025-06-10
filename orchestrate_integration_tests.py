@@ -9,15 +9,12 @@ This script manages:
 4. Stopping both servers (always, regardless of test outcome)
 """
 
-import asyncio
 import atexit
 import signal
 import subprocess
 import sys
 import time
-from pathlib import Path
 from typing import Optional
-import sys
 
 
 class ServiceManager:

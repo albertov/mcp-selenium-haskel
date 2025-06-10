@@ -1,18 +1,12 @@
+from utils.mcp_client import MCPSeleniumClient
+from utils.html_server import TestHTMLServer
 import pytest
 import pytest_asyncio
-import asyncio
 import tempfile
 import shutil
-import sys
 from pathlib import Path
 from typing import AsyncGenerator
 
-# Add the tests directory to Python path so we can import utils
-tests_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(tests_dir))
-
-from utils.mcp_client import MCPSeleniumClient
-from utils.html_server import TestHTMLServer
 
 
 

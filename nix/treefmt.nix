@@ -7,4 +7,5 @@
   programs.ormolu.enable = true;
   programs.shellcheck.enable = true;
   programs.deadnix.enable = true;
+  programs.ruff.enable = true;
 }
