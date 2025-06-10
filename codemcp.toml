@@ -1,0 +1,34 @@
+# codemcp configuration file
+project_prompt = """
+You MUST always run the 'lint' tool on every Haskell file you modify and fix ALL the warnings
+and errors it reports.
+
+You MUST always run the 'test' tool on every package you modify and fix any errors.
+
+You MUST always use explicit import and export lists.
+
+When your work is ready, you MUST run the 'changed_files' tool to get a list of all the files
+that have been modified in this branch and bump the version and update the
+changelog of all packages that have been modified, not the ones that have been
+newly created.
+"""
+
+[commands.format]
+command = ["nix", "fmt"]
+doc = "Must pass the name of the haskell file that needs formatting as an argument"
+
+[commands.test]
+command = ["cabal", "test"]
+doc = "Accepts the name of a single package as an argument to run their specific tests"
+
+[commands.lint]
+command = ["hlint"]
+doc = "Run hlint on the file passed as argument to report errors"
+
+[commands.changed_files]
+command = ["git", "diff", "--name-only", "origin/master...HEAD"]
+doc = "List the file names that have been changed in this branch"
+
+[logger]
+# Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+verbosity = "DEBUG"
