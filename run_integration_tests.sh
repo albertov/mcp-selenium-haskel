@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-# TODO: Add commands here to run the python integration tests
-exit 0
+# Run the Python orchestration script for integration tests
+exec python3 orchestrate_integration_tests.py
