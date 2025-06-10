@@ -3,6 +3,9 @@ project_prompt = """
 You MUST always run the 'lint' tool on every Haskell file you modify and fix ALL the warnings
 and errors it reports.
 
+You can use the 'hoogle' tool to search for documentation about symbols in most
+of the external dependenciesy we have available, notably, hs-mcp is missing.
+
 When editing cabal files, do not add version bounds to packages.
 
 You MUST always run the 'test' tool on every package you modify and fix any errors.
@@ -22,6 +25,13 @@ doc = "Must pass the name of the haskell file that needs formatting as an argume
 [commands.test]
 command = ["cabal", "test"]
 doc = "Accepts the name of a single package as an argument to run their specific tests"
+
+[commands.hoogle]
+command = ["hoogle"]
+doc = """
+Use Hoogle to seach symbols in available dependencies.
+You may only search one symbol at a time
+"""
 
 [commands.lint]
 command = ["hlint"]

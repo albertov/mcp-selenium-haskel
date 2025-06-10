@@ -60,7 +60,7 @@ library
     base64-bytestring,
     unordered-containers,
     webdriver,
-    mcp-server,
+    hs-mcp
 
 test-suite mcp-selenium-test
   type: exitcode-stdio-1.0
