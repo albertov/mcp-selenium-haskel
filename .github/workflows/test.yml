@@ -14,11 +14,11 @@ jobs:
       uses: cachix/install-nix-action@v31
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Setup Attic cache
+    - name: Setup Cachix cache
       uses: cachix/cachix-action@v14
       with:
         name: mcp-selenium-haskell
-        authToken: '${{ secrets.CACHIX_TOKEN }}'
+        authToken: ${{ secrets.CACHIX_TOKEN }}
     - name: Build everything
       run: nix build --accept-flake-config
     # - name: Run checks
