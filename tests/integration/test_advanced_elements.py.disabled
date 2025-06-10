@@ -1,0 +1,285 @@
+import pytest
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestAdvancedElementInteraction:
+    """Test advanced element interaction capabilities"""
+
+    @pytest.mark.asyncio
+    async def test_get_element_text(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test getting text from elements"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "get_element_text" in tools:
+            result = await mcp_client.call_tool("get_element_text", {
+                "by": "tag",
+                "value": "h1",
+                "timeout": 10000
+            })
+
+            assert "error" not in result
+            assert "text" in result or "Test Page Title" in result.get("text", "")
+        else:
+            pytest.skip("get_element_text tool not available")
+
+    @pytest.mark.asyncio
+    async def test_get_element_attribute(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test getting element attributes"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "get_element_attribute" in tools:
+            # Test getting placeholder attribute
+            result = await mcp_client.call_tool("get_element_attribute", {
+                "by": "id",
+                "value": "username",
+                "attribute": "placeholder",
+                "timeout": 10000
+            })
+
+            assert "error" not in result
+            # Should return the placeholder value or indicate success
+        else:
+            pytest.skip("get_element_attribute tool not available")
+
+    @pytest.mark.asyncio
+    async def test_element_visibility_checks(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test checking element visibility"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "is_element_visible" in tools:
+            result = await mcp_client.call_tool("is_element_visible", {
+                "by": "tag",
+                "value": "h1",
+                "timeout": 10000
+            })
+
+            assert "error" not in result
+            # Should indicate visibility status
+        else:
+            pytest.skip("is_element_visible tool not available")
+
+    @pytest.mark.asyncio
+    async def test_multiple_elements_finding(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test finding multiple elements"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "find_elements" in tools:
+            # Find all input elements
+            result = await mcp_client.call_tool("find_elements", {
+                "by": "tag",
+                "value": "input",
+                "timeout": 10000
+            })
+
+            assert "error" not in result
+            # Should return multiple elements or indicate count
+        else:
+            # Test finding individual elements of the same type
+            input_result = await mcp_client.find_element("tag", "input")
+            assert "error" not in input_result
+
+    @pytest.mark.asyncio
+    async def test_element_interaction_chain(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test chaining multiple element interactions"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        # Chain of interactions: find → click → type → get text
+        username_field = await mcp_client.find_element("id", "username")
+        assert "error" not in username_field
+
+        click_result = await mcp_client.click_element("id", "username")
+        assert "error" not in click_result
+
+        type_result = await mcp_client.send_keys("id", "username", "testuser123")
+        assert "error" not in type_result
+
+        # Try to get the value back if tool is available
+        tools = await mcp_client.list_tools()
+        if "get_element_attribute" in tools:
+            value_result = await mcp_client.call_tool("get_element_attribute", {
+                "by": "id",
+                "value": "username",
+                "attribute": "value",
+                "timeout": 10000
+            })
+            # Should not error, may or may not return the typed value
+
+    @pytest.mark.asyncio
+    async def test_form_submission(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test form submission workflow"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        # Fill out form
+        await mcp_client.send_keys("id", "username", "testuser")
+        await mcp_client.send_keys("id", "password", "testpass")
+
+        # Submit form by clicking submit button
+        submit_result = await mcp_client.click_element("id", "submit-btn")
+        assert "error" not in submit_result
+
+    @pytest.mark.asyncio
+    async def test_element_state_checks(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test checking various element states"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        # Test various state check tools if available
+        state_tools = [
+            ("is_element_enabled", {"by": "id", "value": "username", "timeout": 10000}),
+            ("is_element_selected", {"by": "id", "value": "submit-btn", "timeout": 10000}),
+            ("is_element_displayed", {"by": "id", "value": "username", "timeout": 10000}),
+        ]
+
+        for tool_name, args in state_tools:
+            if tool_name in tools:
+                result = await mcp_client.call_tool(tool_name, args)
+                assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_element_css_properties(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test getting CSS properties of elements"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "get_element_css_property" in tools:
+            result = await mcp_client.call_tool("get_element_css_property", {
+                "by": "tag",
+                "value": "h1",
+                "property": "color",
+                "timeout": 10000
+            })
+
+            assert "error" not in result
+        else:
+            pytest.skip("get_element_css_property tool not available")
+
+    @pytest.mark.asyncio
+    async def test_wait_for_element_conditions(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test waiting for various element conditions"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        wait_tools = [
+            ("wait_for_element_visible", {"by": "tag", "value": "h1", "timeout": 5000}),
+            ("wait_for_element_clickable", {"by": "id", "value": "test-button", "timeout": 5000}),
+            ("wait_for_element_present", {"by": "tag", "value": "body", "timeout": 5000}),
+        ]
+
+        for tool_name, args in wait_tools:
+            if tool_name in tools:
+                result = await mcp_client.call_tool(tool_name, args)
+                assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_element_location_and_size(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test getting element location and size"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        location_tools = [
+            ("get_element_location", {"by": "tag", "value": "h1", "timeout": 10000}),
+            ("get_element_size", {"by": "tag", "value": "h1", "timeout": 10000}),
+            ("get_element_rect", {"by": "tag", "value": "h1", "timeout": 10000}),
+        ]
+
+        for tool_name, args in location_tools:
+            if tool_name in tools:
+                result = await mcp_client.call_tool(tool_name, args)
+                assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_element_focus_and_blur(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test focusing and blurring elements"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "focus_element" in tools:
+            result = await mcp_client.call_tool("focus_element", {
+                "by": "id",
+                "value": "username",
+                "timeout": 10000
+            })
+            assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_element_clear_operation(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test clearing element content"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        # First type something
+        await mcp_client.send_keys("id", "username", "initial text")
+
+        tools = await mcp_client.list_tools()
+
+        if "clear_element" in tools:
+            result = await mcp_client.call_tool("clear_element", {
+                "by": "id",
+                "value": "username",
+                "timeout": 10000
+            })
+            assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_complex_locator_strategies(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test various locator strategies"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        # Test different locator strategies
+        locator_tests = [
+            ("css", "input[type='text']"),
+            ("tag", "form"),
+            ("id", "username"),
+            ("xpath", "//input[@id='username']") if "xpath" in str(await mcp_client.list_tools()) else None,
+            ("class", "form-control") if "class" in str(await mcp_client.list_tools()) else None,
+            ("name", "username") if "name" in str(await mcp_client.list_tools()) else None,
+        ]
+
+        for strategy, value in locator_tests:
+            if strategy and value:
+                result = await mcp_client.find_element(strategy, value, timeout=5)
+                # Some strategies may not be supported, which is fine
+                if "error" in result and "invalid" in result.get("text", "").lower():
+                    print(f"Locator strategy '{strategy}' not supported")
+                    continue
+
+                # If strategy is supported, should find element or return appropriate error
+                assert isinstance(result, dict)

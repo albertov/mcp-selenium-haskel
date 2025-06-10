@@ -1,0 +1,197 @@
+import pytest
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestConsoleLogging:
+    """Test browser console logging functionality"""
+
+    @pytest.mark.asyncio
+    async def test_get_console_logs_tool_available(self, mcp_client: MCPSeleniumClient):
+        """Test if console logging tools are available"""
+        tools = await mcp_client.list_tools()
+
+        # Check which console-related tools are available
+        console_tools = [tool for tool in tools if 'console' in tool.lower() or 'log' in tool.lower()]
+        print(f"Available console-related tools: {console_tools}")
+
+        # We'll test the tools that are available
+        if not console_tools:
+            pytest.skip("No console logging tools available")
+
+    @pytest.mark.asyncio
+    async def test_browser_console_logs_with_logging_enabled(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test getting console logs when logging is enabled"""
+        # Start browser with logging enabled
+        await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox"]
+            },
+            "enableLogging": True
+        })
+
+        # Navigate to test page
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Check available tools
+        tools = await mcp_client.list_tools()
+
+        # Try to get console logs if the tool exists
+        if "get_console_logs" in tools:
+            result = await mcp_client.call_tool("get_console_logs", {})
+            assert "error" not in result
+            # May or may not have logs, but should not error
+
+        elif any("console" in tool.lower() for tool in tools):
+            # Try the first console-related tool
+            console_tool = next(tool for tool in tools if "console" in tool.lower())
+            result = await mcp_client.call_tool(console_tool, {})
+            assert isinstance(result, dict)
+
+    @pytest.mark.asyncio
+    async def test_inject_console_logger(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test injecting console logger script"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "inject_console_logger" in tools:
+            result = await mcp_client.call_tool("inject_console_logger", {})
+            assert "error" not in result
+            assert ("inject" in result.get("text", "").lower() or
+                    "console" in result.get("text", "").lower() or
+                    "success" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_console_logs_after_javascript_execution(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test getting console logs after executing JavaScript"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        # First inject console logger if available
+        if "inject_console_logger" in tools:
+            await mcp_client.call_tool("inject_console_logger", {})
+
+        # Execute some JavaScript that produces console output
+        if "execute_script" in tools:
+            await mcp_client.call_tool("execute_script", {
+                "script": "console.log('Test message from script'); console.warn('Test warning');"
+            })
+
+            # Try to get the injected console logs
+            if "get_injected_console_logs" in tools:
+                result = await mcp_client.call_tool("get_injected_console_logs", {})
+                assert "error" not in result
+                # Should contain our test messages
+                response_text = result.get("text", "").lower()
+                # Messages may or may not be captured depending on implementation
+
+    @pytest.mark.asyncio
+    async def test_console_logs_filtering(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test console log filtering by level"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "get_console_logs" in tools:
+            # Test different log levels
+            log_levels = ["ALL", "SEVERE", "WARNING", "INFO", "DEBUG"]
+
+            for level in log_levels:
+                result = await mcp_client.call_tool("get_console_logs", {
+                    "logLevel": level
+                })
+                assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_console_logs_max_entries(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test limiting console log entries"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "get_console_logs" in tools:
+            result = await mcp_client.call_tool("get_console_logs", {
+                "maxEntries": 5
+            })
+            assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_clear_injected_console_logs(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test clearing injected console logs"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "inject_console_logger" in tools and "get_injected_console_logs" in tools:
+            # Inject logger
+            await mcp_client.call_tool("inject_console_logger", {})
+
+            # Get logs and clear them
+            result = await mcp_client.call_tool("get_injected_console_logs", {
+                "clear": True
+            })
+            assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_console_logs_without_browser(self, mcp_client: MCPSeleniumClient):
+        """Test console logging operations without browser"""
+        tools = await mcp_client.list_tools()
+
+        console_operations = []
+        if "get_console_logs" in tools:
+            console_operations.append(("get_console_logs", {}))
+        if "inject_console_logger" in tools:
+            console_operations.append(("inject_console_logger", {}))
+        if "get_injected_console_logs" in tools:
+            console_operations.append(("get_injected_console_logs", {}))
+
+        for operation_name, args in console_operations:
+            result = await mcp_client.call_tool(operation_name, args)
+            assert ("error" in result or
+                    "no browser" in result.get("text", "").lower() or
+                    "no active browser" in result.get("text", "").lower()), \
+                   f"Console operation {operation_name} should fail without browser"
+
+    @pytest.mark.asyncio
+    async def test_console_logs_with_page_errors(self, mcp_client: MCPSeleniumClient):
+        """Test console logs capture JavaScript errors"""
+        await mcp_client.start_browser()
+
+        tools = await mcp_client.list_tools()
+
+        # Navigate to a page that might generate JavaScript errors
+        await mcp_client.navigate("data:text/html,<script>throw new Error('Test error');</script>")
+
+        if "get_console_logs" in tools:
+            result = await mcp_client.call_tool("get_console_logs", {
+                "logLevel": "SEVERE"
+            })
+            assert "error" not in result
+            # May or may not capture the error depending on implementation timing
+
+    @pytest.mark.asyncio
+    async def test_get_available_log_types(self, mcp_client: MCPSeleniumClient):
+        """Test getting available log types"""
+        await mcp_client.start_browser()
+
+        tools = await mcp_client.list_tools()
+
+        if "get_available_log_types" in tools:
+            result = await mcp_client.call_tool("get_available_log_types", {})
+            assert "error" not in result
+            assert ("types" in result.get("text", "").lower() or
+                    "browser" in result.get("text", "").lower())

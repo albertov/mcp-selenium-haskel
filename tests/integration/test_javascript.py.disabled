@@ -1,0 +1,265 @@
+import pytest
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestJavaScriptExecution:
+    """Test JavaScript execution capabilities"""
+
+    @pytest.mark.asyncio
+    async def test_execute_script_tool_available(self, mcp_client: MCPSeleniumClient):
+        """Check if JavaScript execution tools are available"""
+        tools = await mcp_client.list_tools()
+
+        js_tools = [tool for tool in tools if 'script' in tool.lower() or 'javascript' in tool.lower()]
+        print(f"Available JavaScript-related tools: {js_tools}")
+
+        if not js_tools:
+            pytest.skip("No JavaScript execution tools available")
+
+    @pytest.mark.asyncio
+    async def test_execute_simple_script(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test executing simple JavaScript"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            result = await mcp_client.call_tool("execute_script", {
+                "script": "return document.title;"
+            })
+
+            assert "error" not in result
+            # Should return the page title or indicate success
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_with_return_value(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test executing JavaScript with return values"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Test returning different data types
+            scripts = [
+                "return 42;",
+                "return 'hello world';",
+                "return true;",
+                "return [1, 2, 3];",
+                "return {name: 'test', value: 123};"
+            ]
+
+            for script in scripts:
+                result = await mcp_client.call_tool("execute_script", {
+                    "script": script
+                })
+                assert "error" not in result
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_dom_manipulation(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test JavaScript DOM manipulation"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Add a new element to the page
+            result = await mcp_client.call_tool("execute_script", {
+                "script": """
+                var newDiv = document.createElement('div');
+                newDiv.id = 'dynamic-element';
+                newDiv.textContent = 'Dynamically added element';
+                document.body.appendChild(newDiv);
+                return 'Element added';
+                """
+            })
+
+            assert "error" not in result
+
+            # Try to find the dynamically added element
+            find_result = await mcp_client.find_element("id", "dynamic-element")
+            # May or may not find it depending on timing and implementation
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_with_arguments(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test executing JavaScript with arguments"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Check if the tool supports arguments
+            result = await mcp_client.call_tool("execute_script", {
+                "script": "return arguments.length > 0 ? arguments[0] + arguments[1] : 'no args';",
+                "args": [10, 20]
+            })
+
+            # Tool may or may not support arguments
+            assert "error" not in result or "args" in result.get("text", "").lower()
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_async_script(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test executing asynchronous JavaScript"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_async_script" in tools:
+            result = await mcp_client.call_tool("execute_async_script", {
+                "script": """
+                var callback = arguments[arguments.length - 1];
+                setTimeout(function() {
+                    callback('async result');
+                }, 100);
+                """
+            })
+
+            assert "error" not in result
+        elif "execute_script" in tools:
+            # Try a simpler timeout-based script
+            result = await mcp_client.call_tool("execute_script", {
+                "script": "return new Date().getTime();"
+            })
+            assert "error" not in result
+        else:
+            pytest.skip("No script execution tools available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_form_interaction(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test JavaScript form interaction"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Fill form using JavaScript
+            result = await mcp_client.call_tool("execute_script", {
+                "script": """
+                var username = document.getElementById('username');
+                var password = document.getElementById('password');
+                if (username) username.value = 'jsuser';
+                if (password) password.value = 'jspass';
+                return 'Form filled';
+                """
+            })
+
+            assert "error" not in result
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_error_handling(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test JavaScript execution error handling"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Execute script with syntax error
+            result = await mcp_client.call_tool("execute_script", {
+                "script": "invalid javascript syntax {"
+            })
+
+            # Should handle error gracefully
+            assert "error" in result
+
+            # Execute script with runtime error
+            result2 = await mcp_client.call_tool("execute_script", {
+                "script": "throw new Error('Test error');"
+            })
+
+            # Should handle runtime error gracefully
+            assert "error" in result2
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_page_modification(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test modifying page content with JavaScript"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Change page title
+            result = await mcp_client.call_tool("execute_script", {
+                "script": """
+                document.title = 'Modified Title';
+                return document.title;
+                """
+            })
+
+            assert "error" not in result
+
+            # Verify title change with another script
+            result2 = await mcp_client.call_tool("execute_script", {
+                "script": "return document.title;"
+            })
+
+            assert "error" not in result2
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_without_browser(self, mcp_client: MCPSeleniumClient):
+        """Test JavaScript execution without browser"""
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            result = await mcp_client.call_tool("execute_script", {
+                "script": "return 'test';"
+            })
+
+            assert ("error" in result or
+                    "no browser" in result.get("text", "").lower() or
+                    "no active browser" in result.get("text", "").lower())
+        else:
+            pytest.skip("execute_script tool not available")
+
+    @pytest.mark.asyncio
+    async def test_execute_script_large_result(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test JavaScript execution with large results"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+
+        if "execute_script" in tools:
+            # Create a large result
+            result = await mcp_client.call_tool("execute_script", {
+                "script": """
+                var largeArray = [];
+                for (var i = 0; i < 100; i++) {
+                    largeArray.push({index: i, value: 'item_' + i});
+                }
+                return largeArray.length;
+                """
+            })
+
+            assert "error" not in result
+        else:
+            pytest.skip("execute_script tool not available")

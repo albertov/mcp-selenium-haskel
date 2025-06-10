@@ -1,0 +1,99 @@
+import pytest
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestFileUpload:
+    """Test file upload functionality"""
+
+    @pytest.mark.asyncio
+    async def test_upload_file_to_input(self, mcp_client: MCPSeleniumClient, test_server, sample_file):
+        """Test uploading file to file input element"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/upload_page.html"
+        await mcp_client.navigate(url)
+
+        # Check if upload_file tool is available
+        tools = await mcp_client.list_tools()
+        if "upload_file" not in tools:
+            pytest.skip("upload_file tool not available in this implementation")
+
+        # Upload file using the upload_file tool
+        result = await mcp_client.call_tool("upload_file", {
+            "by": "id",
+            "value": "file-input",
+            "filePath": str(sample_file),
+            "timeout": 10000
+        })
+
+        assert "error" not in result
+        assert ("uploaded" in result.get("text", "").lower() or
+                "success" in result.get("text", "").lower() or
+                "file" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_upload_file_nonexistent_element(self, mcp_client: MCPSeleniumClient, test_server, sample_file):
+        """Test uploading file to non-existent element"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+        if "upload_file" not in tools:
+            pytest.skip("upload_file tool not available in this implementation")
+
+        result = await mcp_client.call_tool("upload_file", {
+            "by": "id",
+            "value": "nonexistent-file-input",
+            "filePath": str(sample_file),
+            "timeout": 2000
+        })
+
+        # Should return error for non-existent element
+        assert ("error" in result or
+                "not found" in result.get("text", "").lower() or
+                "element not found" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_upload_nonexistent_file(self, mcp_client: MCPSeleniumClient, test_server, temp_dir):
+        """Test uploading non-existent file"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/upload_page.html"
+        await mcp_client.navigate(url)
+
+        tools = await mcp_client.list_tools()
+        if "upload_file" not in tools:
+            pytest.skip("upload_file tool not available in this implementation")
+
+        # Try to upload a file that doesn't exist
+        nonexistent_file = temp_dir / "nonexistent.txt"
+
+        result = await mcp_client.call_tool("upload_file", {
+            "by": "id",
+            "value": "file-input",
+            "filePath": str(nonexistent_file),
+            "timeout": 10000
+        })
+
+        # Should return error for non-existent file
+        assert ("error" in result or
+                "file not found" in result.get("text", "").lower() or
+                "no such file" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_upload_without_browser(self, mcp_client: MCPSeleniumClient, sample_file):
+        """Test file upload without starting browser"""
+        tools = await mcp_client.list_tools()
+        if "upload_file" not in tools:
+            pytest.skip("upload_file tool not available in this implementation")
+
+        result = await mcp_client.call_tool("upload_file", {
+            "by": "id",
+            "value": "file-input",
+            "filePath": str(sample_file),
+            "timeout": 10000
+        })
+
+        # Should return error since no browser session exists
+        assert ("error" in result or
+                "no browser" in result.get("text", "").lower() or
+                "no active browser" in result.get("text", "").lower())

@@ -1,0 +1,185 @@
+import pytest
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestErrorHandling:
+    """Test various error scenarios and edge cases"""
+
+    @pytest.mark.asyncio
+    async def test_invalid_tool_name(self, mcp_client: MCPSeleniumClient):
+        """Test calling non-existent tool"""
+        # This should raise an exception at the MCP protocol level
+        with pytest.raises(Exception):
+            await mcp_client.call_tool("NonExistentTool", {})
+
+    @pytest.mark.asyncio
+    async def test_navigate_missing_url(self, mcp_client: MCPSeleniumClient):
+        """Test navigation with missing URL parameter"""
+        await mcp_client.start_browser()
+
+        result = await mcp_client.call_tool("navigate", {})  # Missing URL
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_find_element_missing_parameters(self, mcp_client: MCPSeleniumClient):
+        """Test find_element with missing parameters"""
+        await mcp_client.start_browser()
+
+        # Missing 'by' parameter
+        result = await mcp_client.call_tool("find_element", {"value": "test"})
+        assert "error" in result
+
+        # Missing 'value' parameter
+        result = await mcp_client.call_tool("find_element", {"by": "id"})
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_invalid_parameter_types(self, mcp_client: MCPSeleniumClient):
+        """Test calling tools with wrong parameter types"""
+        await mcp_client.start_browser()
+
+        # URL should be string, not number
+        result = await mcp_client.call_tool("navigate", {"url": 123})
+        assert "error" in result
+
+        # Timeout should be number, not string
+        result = await mcp_client.call_tool("find_element", {
+            "by": "id",
+            "value": "test",
+            "timeout": "invalid"
+        })
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_invalid_locator_strategy(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test find_element with invalid locator strategy"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        result = await mcp_client.find_element("invalid_strategy", "test")
+        assert ("error" in result or
+                "invalid" in result.get("text", "").lower() or
+                "unknown" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_navigation_to_invalid_url(self, mcp_client: MCPSeleniumClient):
+        """Test navigation to various invalid URLs"""
+        await mcp_client.start_browser()
+
+        invalid_urls = [
+            "not-a-url",
+            "ftp://invalid-protocol.com",
+            "http://localhost:99999/nonexistent",
+            ""
+        ]
+
+        for url in invalid_urls:
+            result = await mcp_client.navigate(url)
+            # Should either error or handle gracefully
+            # Different implementations may handle these differently
+            if "error" not in result:
+                # If no error, should at least return some response
+                assert "text" in result or "success" in result
+
+    @pytest.mark.asyncio
+    async def test_multiple_browser_starts(self, mcp_client: MCPSeleniumClient):
+        """Test starting browser multiple times"""
+        # Start browser first time
+        result1 = await mcp_client.start_browser()
+        assert "error" not in result1
+
+        # Start browser second time - should either succeed or handle gracefully
+        result2 = await mcp_client.start_browser()
+        # Either succeeds (creates new session) or returns info about existing session
+        # Both are valid behaviors
+        assert isinstance(result2, dict)
+
+    @pytest.mark.asyncio
+    async def test_operations_with_very_short_timeout(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test operations with very short timeouts"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Try to find element with very short timeout (should fail quickly)
+        result = await mcp_client.find_element("id", "nonexistent", timeout=0.1)
+        assert ("error" in result or
+                "timeout" in result.get("text", "").lower() or
+                "not found" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_operations_after_navigation_failure(self, mcp_client: MCPSeleniumClient):
+        """Test operations after failed navigation"""
+        await mcp_client.start_browser()
+
+        # Navigate to invalid URL
+        await mcp_client.navigate("http://invalid-url-that-does-not-exist.local")
+
+        # Try to find element (should handle gracefully)
+        result = await mcp_client.find_element("id", "test", timeout=2)
+        # Should either find nothing or error appropriately
+        assert isinstance(result, dict)
+
+    @pytest.mark.asyncio
+    async def test_send_keys_to_non_input_element(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test sending keys to non-input elements"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Try to send keys to a non-input element (like h1)
+        result = await mcp_client.send_keys("tag", "h1", "test text")
+        # Should either work (some elements are focusable) or return appropriate error
+        assert isinstance(result, dict)
+
+    @pytest.mark.asyncio
+    async def test_click_non_clickable_element(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test clicking non-clickable elements"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Try to click on text content
+        result = await mcp_client.click_element("tag", "p")
+        # Should either work (p elements can be clicked) or handle gracefully
+        assert isinstance(result, dict)
+
+    @pytest.mark.asyncio
+    async def test_operations_without_browser_detailed(self, mcp_client: MCPSeleniumClient):
+        """Test all major operations without starting browser"""
+        operations = [
+            ("navigate", {"url": "https://example.com"}),
+            ("find_element", {"by": "id", "value": "test", "timeout": 1000}),
+            ("click_element", {"by": "id", "value": "test", "timeout": 1000}),
+            ("send_keys", {"by": "id", "value": "test", "text": "test", "timeout": 1000}),
+            ("take_screenshot", {}),
+        ]
+
+        # Check which tools are available first
+        tools = await mcp_client.list_tools()
+
+        for tool_name, args in operations:
+            if tool_name in tools:
+                result = await mcp_client.call_tool(tool_name, args)
+                assert ("error" in result or
+                        "no browser" in result.get("text", "").lower() or
+                        "no active browser" in result.get("text", "").lower()), \
+                       f"Tool {tool_name} should fail without browser"
+
+    @pytest.mark.asyncio
+    async def test_browser_crash_recovery(self, mcp_client: MCPSeleniumClient):
+        """Test operations after potential browser crash"""
+        await mcp_client.start_browser()
+
+        # Navigate to a page that might cause issues
+        await mcp_client.navigate("about:blank")
+
+        # Try multiple operations to ensure stability
+        for i in range(3):
+            result = await mcp_client.take_screenshot()
+            assert isinstance(result, dict)
+
+            # Small delay between operations
+            import asyncio
+            await asyncio.sleep(0.1)

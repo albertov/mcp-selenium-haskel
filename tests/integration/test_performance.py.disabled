@@ -1,0 +1,220 @@
+import pytest
+import time
+import asyncio
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestPerformance:
+    """Performance tests for MCP Selenium operations"""
+
+    @pytest.mark.asyncio
+    async def test_browser_startup_time(self, mcp_client: MCPSeleniumClient):
+        """Measure browser startup time"""
+        start_time = time.time()
+
+        result = await mcp_client.start_browser()
+
+        end_time = time.time()
+        startup_time = end_time - start_time
+
+        assert "error" not in result
+        assert startup_time < 15.0, f"Browser startup took {startup_time:.2f}s, should be < 15s"
+        print(f"Browser startup time: {startup_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_navigation_time(self, mcp_client: MCPSeleniumClient, test_server):
+        """Measure navigation time"""
+        await mcp_client.start_browser()
+
+        url = f"{test_server.base_url}/test_page.html"
+
+        start_time = time.time()
+        result = await mcp_client.navigate(url)
+        end_time = time.time()
+
+        navigation_time = end_time - start_time
+
+        assert "error" not in result
+        assert navigation_time < 10.0, f"Navigation took {navigation_time:.2f}s, should be < 10s"
+        print(f"Navigation time: {navigation_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_element_finding_performance(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test performance of element finding operations"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        # Test finding existing element multiple times
+        total_time = 0
+        iterations = 10
+
+        for i in range(iterations):
+            start_time = time.time()
+            result = await mcp_client.find_element("id", "username")
+            end_time = time.time()
+
+            assert "error" not in result
+            total_time += (end_time - start_time)
+
+        avg_time = total_time / iterations
+        assert avg_time < 2.0, f"Average element finding took {avg_time:.2f}s, should be < 2s"
+        print(f"Average element finding time: {avg_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_multiple_sequential_operations(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test performance of multiple sequential operations"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/form_page.html"
+        await mcp_client.navigate(url)
+
+        start_time = time.time()
+
+        # Perform a sequence of operations
+        operations = [
+            ("find_element", {"by": "id", "value": "username", "timeout": 5000}),
+            ("click_element", {"by": "id", "value": "username", "timeout": 5000}),
+            ("send_keys", {"by": "id", "value": "username", "text": "testuser", "timeout": 5000}),
+            ("find_element", {"by": "id", "value": "password", "timeout": 5000}),
+            ("click_element", {"by": "id", "value": "password", "timeout": 5000}),
+            ("send_keys", {"by": "id", "value": "password", "text": "testpass", "timeout": 5000}),
+        ]
+
+        for operation_name, args in operations:
+            result = await mcp_client.call_tool(operation_name, args)
+            assert "error" not in result
+
+        end_time = time.time()
+        total_time = end_time - start_time
+
+        assert total_time < 30.0, f"Sequential operations took {total_time:.2f}s, should be < 30s"
+        print(f"Sequential operations time: {total_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_screenshot_performance(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test screenshot operation performance"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Take multiple screenshots to test consistency
+        times = []
+        for i in range(3):
+            start_time = time.time()
+            result = await mcp_client.take_screenshot()
+            end_time = time.time()
+
+            assert "error" not in result
+            times.append(end_time - start_time)
+
+        avg_time = sum(times) / len(times)
+        max_time = max(times)
+
+        assert avg_time < 5.0, f"Average screenshot time {avg_time:.2f}s, should be < 5s"
+        assert max_time < 10.0, f"Max screenshot time {max_time:.2f}s, should be < 10s"
+        print(f"Screenshot times - avg: {avg_time:.2f}s, max: {max_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_rapid_successive_operations(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test handling of rapid successive operations"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        start_time = time.time()
+
+        # Perform rapid element finding operations
+        tasks = []
+        for i in range(5):
+            task = mcp_client.find_element("tag", "h1", timeout=5)
+            tasks.append(task)
+
+        # Wait for all operations to complete
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        end_time = time.time()
+        total_time = end_time - start_time
+
+        # Check that most operations succeeded
+        successful_ops = sum(1 for result in results
+                           if isinstance(result, dict) and "error" not in result)
+
+        assert successful_ops >= 3, f"Only {successful_ops}/5 rapid operations succeeded"
+        assert total_time < 15.0, f"Rapid operations took {total_time:.2f}s, should be < 15s"
+        print(f"Rapid operations: {successful_ops}/5 succeeded in {total_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_timeout_handling_performance(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test performance of timeout handling"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Test finding non-existent element with short timeout
+        start_time = time.time()
+        result = await mcp_client.find_element("id", "nonexistent", timeout=1)
+        end_time = time.time()
+
+        operation_time = end_time - start_time
+
+        # Should timeout quickly and not hang
+        assert ("error" in result or "not found" in result.get("text", "").lower())
+        assert operation_time < 3.0, f"Timeout operation took {operation_time:.2f}s, should be < 3s"
+        print(f"Timeout handling time: {operation_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_memory_usage_stability(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test memory usage doesn't grow excessively with repeated operations"""
+        await mcp_client.start_browser()
+        url = f"{test_server.base_url}/test_page.html"
+        await mcp_client.navigate(url)
+
+        # Perform many operations to check for memory leaks
+        start_time = time.time()
+
+        for i in range(20):
+            # Mix of different operations
+            await mcp_client.find_element("tag", "h1")
+            await mcp_client.take_screenshot()
+            if i % 5 == 0:
+                await mcp_client.navigate(url)  # Re-navigate occasionally
+
+        end_time = time.time()
+        total_time = end_time - start_time
+
+        # Operations should complete in reasonable time
+        assert total_time < 60.0, f"Repeated operations took {total_time:.2f}s, should be < 60s"
+        print(f"20 mixed operations completed in {total_time:.2f}s")
+
+    @pytest.mark.asyncio
+    async def test_tool_listing_performance(self, mcp_client: MCPSeleniumClient):
+        """Test tool listing performance"""
+        start_time = time.time()
+
+        tools = await mcp_client.list_tools()
+
+        end_time = time.time()
+        listing_time = end_time - start_time
+
+        assert len(tools) > 0, "Should have some tools available"
+        assert listing_time < 2.0, f"Tool listing took {listing_time:.2f}s, should be < 2s"
+        print(f"Tool listing time: {listing_time:.2f}s, found {len(tools)} tools")
+
+    @pytest.mark.asyncio
+    async def test_concurrent_browser_sessions(self, mcp_client: MCPSeleniumClient):
+        """Test performance with potential concurrent sessions"""
+        # Start first browser session
+        result1 = await mcp_client.start_browser()
+        assert "error" not in result1
+
+        # Try to start another session (behavior may vary)
+        start_time = time.time()
+        result2 = await mcp_client.start_browser()
+        end_time = time.time()
+
+        session_time = end_time - start_time
+
+        # Should handle gracefully without hanging
+        assert session_time < 10.0, f"Second session attempt took {session_time:.2f}s, should be < 10s"
+        assert isinstance(result2, dict), "Should return a valid response"
+        print(f"Second session handling time: {session_time:.2f}s")

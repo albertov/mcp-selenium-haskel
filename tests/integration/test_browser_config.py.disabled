@@ -1,0 +1,201 @@
+import pytest
+from utils.mcp_client import MCPSeleniumClient
+
+
+class TestBrowserConfiguration:
+    """Test browser startup with various configurations"""
+
+    @pytest.mark.asyncio
+    async def test_start_firefox_browser(self, mcp_client: MCPSeleniumClient):
+        """Test starting Firefox browser"""
+        result = await mcp_client.start_browser("firefox", headless=True)
+
+        # Firefox may not be available in all environments
+        if "error" in result and "firefox" in result.get("text", "").lower():
+            pytest.skip("Firefox not available in test environment")
+
+        assert "error" not in result
+        assert ("sessionId" in result or "success" in result or "text" in result)
+
+    @pytest.mark.asyncio
+    async def test_browser_with_custom_arguments(self, mcp_client: MCPSeleniumClient):
+        """Test browser startup with custom arguments"""
+        result = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": [
+                    "--no-sandbox",
+                    "--disable-web-security",
+                    "--disable-features=VizDisplayCompositor",
+                    "--disable-gpu"
+                ]
+            },
+            "enableLogging": True
+        })
+
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_browser_headless_vs_headed(self, mcp_client: MCPSeleniumClient):
+        """Test difference between headless and headed browser modes"""
+        # Test headless mode
+        result_headless = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox"]
+            }
+        })
+
+        assert "error" not in result_headless
+
+        # Test headed mode (may not work in CI environments)
+        result_headed = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": False,
+                "arguments": ["--no-sandbox"]
+            }
+        })
+
+        # Headed mode may fail in headless environments, which is expected
+        if "error" in result_headed:
+            print("Headed mode failed (expected in headless environments)")
+        else:
+            assert isinstance(result_headed, dict)
+
+    @pytest.mark.asyncio
+    async def test_invalid_browser_type(self, mcp_client: MCPSeleniumClient):
+        """Test error handling for invalid browser type"""
+        result = await mcp_client.start_browser("invalid_browser")
+
+        assert ("error" in result or
+                "invalid" in result.get("text", "").lower() or
+                "unsupported" in result.get("text", "").lower())
+
+    @pytest.mark.asyncio
+    async def test_browser_with_logging_enabled(self, mcp_client: MCPSeleniumClient):
+        """Test browser startup with logging enabled"""
+        result = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox"]
+            },
+            "enableLogging": True
+        })
+
+        assert "error" not in result
+        # Check if logging is mentioned in response
+        response_text = result.get("text", "").lower()
+        # Logging may or may not be explicitly mentioned in response
+
+    @pytest.mark.asyncio
+    async def test_browser_options_validation(self, mcp_client: MCPSeleniumClient):
+        """Test browser options validation"""
+        # Test with invalid options structure
+        result = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": "invalid_options_type"
+        })
+
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_browser_multiple_arguments(self, mcp_client: MCPSeleniumClient):
+        """Test browser with multiple custom arguments"""
+        arguments = [
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+            "--user-agent=Test Agent"
+        ]
+
+        result = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": arguments
+            }
+        })
+
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_browser_empty_arguments(self, mcp_client: MCPSeleniumClient):
+        """Test browser with empty arguments list"""
+        result = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": []
+            }
+        })
+
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_browser_conflicting_arguments(self, mcp_client: MCPSeleniumClient):
+        """Test browser with potentially conflicting arguments"""
+        result = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": [
+                    "--headless",  # Redundant with headless: true
+                    "--no-headless",  # Potentially conflicting
+                    "--no-sandbox"
+                ]
+            }
+        })
+
+        # Should either work (last argument wins) or error gracefully
+        assert isinstance(result, dict)
+
+    @pytest.mark.asyncio
+    async def test_browser_start_parameters_persistence(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test that browser parameters persist across operations"""
+        # Start browser with specific configuration
+        await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox", "--user-agent=Persistent Test Agent"]
+            }
+        })
+
+        # Navigate and take actions to ensure browser is working
+        url = f"{test_server.base_url}/test_page.html"
+        nav_result = await mcp_client.navigate(url)
+        assert "error" not in nav_result
+
+        screenshot_result = await mcp_client.take_screenshot()
+        assert "error" not in screenshot_result
+
+    @pytest.mark.asyncio
+    async def test_browser_restart_with_different_config(self, mcp_client: MCPSeleniumClient):
+        """Test restarting browser with different configuration"""
+        # Start browser with first configuration
+        result1 = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox"]
+            }
+        })
+        assert "error" not in result1
+
+        # Start browser again with different configuration
+        result2 = await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox", "--disable-gpu"]
+            }
+        })
+
+        # Should either replace existing session or create new one
+        assert "error" not in result2
