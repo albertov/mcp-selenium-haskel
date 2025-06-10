@@ -27,7 +27,7 @@ cabal build
 ## Running
 
 ```bash
-cabal run mcp-selenium-hs
+nix run github:albertov/mcp-selenium-haskell
 ```
 
 ## Integration Testing
