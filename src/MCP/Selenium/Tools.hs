@@ -182,11 +182,6 @@ handleStartBrowser tools (StartBrowserParams browserVal optionsVal optsVal _) = 
     ( do
         session <- initializeSession browserVal finalOpts
         atomically $ writeTVar (sessionVar tools) (Just session)
-        -- Verify the session was stored
-        stored <- readTVarIO (sessionVar tools)
-        case stored of
-          Just _ -> return ()
-          Nothing -> hPutStrLn stderr "ERROR: Session not stored!" >> hFlush stderr
         return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
     )
     ( \e -> do

@@ -49,6 +49,7 @@ class MCPSeleniumClient:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        print("DEBUG: MCPSeleniumClient __aexit__")
         if self._session_context_manager is not None:
             try:
                 await self._session_context_manager.__aexit__(exc_type, exc_val, exc_tb)
