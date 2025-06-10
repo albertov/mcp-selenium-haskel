@@ -30,6 +30,28 @@ cabal build
 nix run github:albertov/mcp-selenium-haskell
 ```
 
+## Claude Desktop Configuration
+
+To use this MCP server with Claude Desktop, add the following configuration to your `claude_desktop_config.json` file:
+
+```json
+{
+  "mcpServers": {
+    "selenium": {
+      "command": "nix",
+      "args": ["run", "github:albertov/mcp-selenium-haskell"],
+      "env": {}
+    }
+  }
+}
+```
+
+The configuration file is typically located at:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+After adding this configuration, restart Claude Desktop to enable the Selenium MCP server.
+
 ## Integration Testing
 
 The project includes comprehensive black-box integration tests that validate the MCP server functionality through its external interface.
