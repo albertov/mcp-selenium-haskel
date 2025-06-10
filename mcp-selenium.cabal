@@ -1,5 +1,5 @@
 cabal-version: 3.0
-name: mcp-selenium-haskell
+name: mcp-selenium
 version: 1.0.0
 synopsis: A Haskell implementation of MCP Selenium Server using WebDriver
 description:
@@ -52,35 +52,18 @@ library
     -Wunused-packages
 
   build-depends:
-    base >= 4.17 && < 5,
-    aeson >= 2.0 && < 3,
-    aeson-schema >= 1.4 && < 2,
-    text >= 1.2 && < 3,
-    containers >= 0.6 && < 1,
-    stm >= 2.5 && < 3,
-    bytestring >= 0.11 && < 1,
-    base64-bytestring >= 1.2 && < 1.3,
-    hs-mcp >= 0.1 && < 1,
-    webdriver >= 0.10 && < 1,
-    transformers >= 0.5 && < 1,
-    mtl >= 2.2 && < 3
-
-executable mcp-selenium-hs
-  main-is: Main.hs
-
-  default-language: Haskell2010
-
-  ghc-options:
-    -Wall
-    -Wredundant-constraints
-    -Wunused-packages
-    -threaded
-    -rtsopts
-    -with-rtsopts=-N
-
-  build-depends:
     base,
-    mcp-selenium-haskell
+    aeson,
+    aeson-schema,
+    text,
+    containers,
+    stm,
+    bytestring,
+    base64-bytestring >= 1.2 && < 1.3,
+    hs-mcp,
+    webdriver,
+    transformers,
+    mtl,
 
 test-suite mcp-selenium-test
   type: exitcode-stdio-1.0
@@ -99,8 +82,8 @@ test-suite mcp-selenium-test
 
   build-depends:
     base,
-    mcp-selenium-haskell,
-    hspec >= 2.7 && < 3,
+    mcp-selenium,
+    hspec,
     aeson,
     text,
     webdriver

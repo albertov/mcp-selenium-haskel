@@ -3,6 +3,8 @@ project_prompt = """
 You MUST always run the 'lint' tool on every Haskell file you modify and fix ALL the warnings
 and errors it reports.
 
+When editing cabal files, do not add version bounds to packages.
+
 You MUST always run the 'test' tool on every package you modify and fix any errors.
 
 You MUST always use explicit import and export lists.
