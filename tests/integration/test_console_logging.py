@@ -1,7 +1,6 @@
 import pytest
 from utils.mcp_client import MCPSeleniumClient
 import time
-import json
 import logging
 
 # Configure logging for better test debugging
@@ -47,45 +46,44 @@ class TestConsoleLogging:
         assert "error" not in logs_result
 
         # Parse the logs response
-        try:
-            if "text" in logs_result:
-                logs_data = json.loads(logs_result["text"])
-                logs = logs_data.get("logs", [])
+        if "logs" in logs_result:
+            logs = logs_result.get("logs", [])
 
-                logger.info(f"Found {len(logs)} log entries")
+            logger.info(f"Found {len(logs)} log entries")
 
-                # We should have some log entries since the page has JavaScript errors
-                assert len(logs) > 0, "Expected to find console log entries from JavaScript errors"
+            # We should have some log entries since the page has JavaScript errors
+            assert len(logs) > 0, "Expected to find console log entries from JavaScript errors"
 
-                # Look for error-related logs
-                error_logs = [log for log in logs if "error" in log.get("level", "").lower() or
-                             "undefined" in log.get("message", "").lower()]
+            # Look for error-related logs
+            error_logs = [log for log in logs if "error" in log.get("level", "").lower() or
+                         "undefined" in log.get("message", "").lower()]
 
-                logger.info(f"Found {len(error_logs)} error-related logs")
+            logger.info(f"Found {len(error_logs)} error-related logs")
 
-                # We expect to find some error logs from the test page
-                assert len(error_logs) > 0, "Expected to find JavaScript error logs"
+            # We expect to find some error logs from the test page
+            assert len(error_logs) > 0, "Expected to find JavaScript error logs"
 
-                # Verify log structure
-                for log in logs[:3]:  # Check first 3 logs
-                    assert "level" in log, "Log entry should have 'level' field"
-                    assert "message" in log, "Log entry should have 'message' field"
-                    assert "timestamp" in log, "Log entry should have 'timestamp' field"
+            # Verify log structure
+            for log in logs[:3]:  # Check first 3 logs
+                assert "level" in log, "Log entry should have 'level' field"
+                assert "message" in log, "Log entry should have 'message' field"
+                assert "timestamp" in log, "Log entry should have 'timestamp' field"
 
-            else:
-                pytest.fail("No 'text' field in logs result")
-
-        except json.JSONDecodeError as e:
-            pytest.fail(f"Failed to parse logs JSON: {e}")
+        else:
+            pytest.fail("No 'logs' field in logs result")
 
     @pytest.mark.asyncio
     async def test_inject_console_logger_and_get_injected_logs(self, mcp_client: MCPSeleniumClient, test_server):
         """Test injecting console logger and retrieving injected logs"""
 
         # Start browser
-        await mcp_client.start_browser("chrome", {
-            "headless": True,
-            "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
+        await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
+            },
+            "enableLogging": True
         })
 
         # Navigate to the test page
@@ -117,44 +115,44 @@ class TestConsoleLogging:
         logger.info(f"Injected logs result: {injected_logs_result}")
         assert "error" not in injected_logs_result
 
-        try:
-            if "text" in injected_logs_result:
-                logs = json.loads(injected_logs_result["text"])
+        # The injected logs come back as a JSON array directly
+        if isinstance(injected_logs_result, list):
+            logs = injected_logs_result
+        else:
+            pytest.fail("Expected injected logs result to be a list")
 
-                logger.info(f"Found {len(logs)} injected log entries")
+        logger.info(f"Found {len(logs)} injected log entries")
 
-                # We should have captured some console messages
-                assert len(logs) > 0, "Expected to find injected console log entries"
+        # We should have captured some console messages
+        assert len(logs) > 0, "Expected to find injected console log entries"
 
-                # Look for the expected error messages
-                error_messages = [log for log in logs if "error" in log.get("level", "").lower()]
-                info_messages = [log for log in logs if "log" in log.get("level", "").lower()]
+        # Look for the expected error messages
+        error_messages = [log for log in logs if "error" in log.get("level", "").lower()]
+        info_messages = [log for log in logs if "log" in log.get("level", "").lower()]
 
-                logger.info(f"Found {len(error_messages)} error messages and {len(info_messages)} info messages")
+        logger.info(f"Found {len(error_messages)} error messages and {len(info_messages)} info messages")
 
-                # Verify we have some error logs from the JavaScript errors
-                assert len(error_messages) > 0 or len(info_messages) > 0, "Expected to find some console messages"
+        # Verify we have some error logs from the JavaScript errors
+        assert len(error_messages) > 0 or len(info_messages) > 0, "Expected to find some console messages"
 
-                # Verify log structure
-                for log in logs[:3]:  # Check first 3 logs
-                    assert "level" in log, "Injected log entry should have 'level' field"
-                    assert "message" in log, "Injected log entry should have 'message' field"
-                    assert "timestamp" in log, "Injected log entry should have 'timestamp' field"
-
-            else:
-                pytest.fail("No 'text' field in injected logs result")
-
-        except json.JSONDecodeError as e:
-            pytest.fail(f"Failed to parse injected logs JSON: {e}")
+        # Verify log structure
+        for log in logs[:3]:  # Check first 3 logs
+            assert "level" in log, "Injected log entry should have 'level' field"
+            assert "message" in log, "Injected log entry should have 'message' field"
+            assert "timestamp" in log, "Injected log entry should have 'timestamp' field"
 
     @pytest.mark.asyncio
     async def test_get_available_log_types(self, mcp_client: MCPSeleniumClient):
         """Test getting available log types"""
 
         # Start browser
-        await mcp_client.start_browser("chrome", {
-            "headless": True,
-            "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
+        await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
+            },
+            "enableLogging": True
         })
 
         # Get available log types
@@ -163,26 +161,21 @@ class TestConsoleLogging:
         logger.info(f"Available log types result: {log_types_result}")
         assert "error" not in log_types_result
 
-        try:
-            if "text" in log_types_result:
-                log_types_data = json.loads(log_types_result["text"])
-                log_types = log_types_data.get("logTypes", [])
+        if "logTypes" in log_types_result:
+            log_types = log_types_result.get("logTypes", [])
 
-                logger.info(f"Available log types: {log_types}")
+            logger.info(f"Available log types: {log_types}")
 
-                # We should have some log types available
-                assert len(log_types) > 0, "Expected to find available log types"
+            # We should have some log types available
+            assert len(log_types) > 0, "Expected to find available log types"
 
-                # Common log types that should be available
-                expected_types = ["browser", "driver"]
-                for expected_type in expected_types:
-                    assert expected_type in log_types, f"Expected '{expected_type}' to be in available log types"
+            # Common log types that should be available
+            expected_types = ["browser", "driver"]
+            for expected_type in expected_types:
+                assert expected_type in log_types, f"Expected '{expected_type}' to be in available log types"
 
-            else:
-                pytest.fail("No 'text' field in log types result")
-
-        except json.JSONDecodeError as e:
-            pytest.fail(f"Failed to parse log types JSON: {e}")
+        else:
+            pytest.fail("No 'logTypes' field in log types result")
 
     @pytest.mark.asyncio
     async def test_console_logs_with_filter(self, mcp_client: MCPSeleniumClient, test_server):
@@ -214,18 +207,13 @@ class TestConsoleLogging:
         logger.info(f"Filtered console logs result: {logs_result}")
         assert "error" not in logs_result
 
-        try:
-            if "text" in logs_result:
-                logs_data = json.loads(logs_result["text"])
-                logs = logs_data.get("logs", [])
+        if "logs" in logs_result:
+            logs = logs_result.get("logs", [])
 
-                logger.info(f"Found {len(logs)} filtered log entries")
+            logger.info(f"Found {len(logs)} filtered log entries")
 
-                # Verify we don't exceed the max entries limit
-                assert len(logs) <= 5, "Should not exceed maxEntries limit"
+            # Verify we don't exceed the max entries limit
+            assert len(logs) <= 5, "Should not exceed maxEntries limit"
 
-            else:
-                logger.info("No text field in logs result, which may be expected if no SEVERE logs exist")
-
-        except json.JSONDecodeError as e:
-            pytest.fail(f"Failed to parse filtered logs JSON: {e}")
+        else:
+            logger.info("No logs field in logs result, which may be expected if no SEVERE logs exist")

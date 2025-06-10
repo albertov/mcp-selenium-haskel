@@ -49,7 +49,7 @@ where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON, (.=))
+import Data.Aeson (FromJSON, ToJSON, encode, object, parseJSON, toJSON, (.=))
 import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
@@ -151,7 +151,10 @@ newtype TakeScreenshotParams = TakeScreenshotParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data CloseSessionParams = CloseSessionParams
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic, ToJSON)
+
+instance FromJSON CloseSessionParams where
+  parseJSON _ = pure CloseSessionParams
 
 -- Console logging parameter types
 data GetConsoleLogsParams = GetConsoleLogsParams
@@ -161,10 +164,16 @@ data GetConsoleLogsParams = GetConsoleLogsParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data GetAvailableLogTypesParams = GetAvailableLogTypesParams
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic, ToJSON)
+
+instance FromJSON GetAvailableLogTypesParams where
+  parseJSON _ = pure GetAvailableLogTypesParams
 
 data InjectConsoleLoggerParams = InjectConsoleLoggerParams
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic, ToJSON)
+
+instance FromJSON InjectConsoleLoggerParams where
+  parseJSON _ = pure InjectConsoleLoggerParams
 
 newtype GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
   { clear :: Maybe Bool
@@ -461,13 +470,18 @@ handleCloseSession tools _ = do
 -- | Handle get_console_logs tool
 handleGetConsoleLogs :: SeleniumTools -> GetConsoleLogsParams -> IO CallToolResult
 handleGetConsoleLogs tools (GetConsoleLogsParams logLevelVal maxEntriesVal) = do
+  hPutStrLn stderr "HANDLER: get_console_logs called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
+    Nothing -> do
+      hPutStrLn stderr "HANDLER: No session in get_console_logs" >> hFlush stderr
+      return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
+            hPutStrLn stderr "HANDLER: Getting logs from WebDriver" >> hFlush stderr
             logs <- getConsoleLogs session logLevelVal maxEntriesVal
+            hPutStrLn stderr ("HANDLER: Got " ++ show (length logs) ++ " log entries") >> hFlush stderr
             let formattedLogs =
                   map
                     ( \(LogEntry timestamp level message) ->
@@ -479,53 +493,82 @@ handleGetConsoleLogs tools (GetConsoleLogsParams logLevelVal maxEntriesVal) = do
                     )
                     logs
                 responseText = TE.decodeUtf8 $ BSL.toStrict $ encode $ object ["logs" .= formattedLogs]
-            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+            hPutStrLn stderr ("HANDLER: Returning response: " ++ T.unpack responseText) >> hFlush stderr
+            return $ successResult responseText
         )
-        (\e -> return $ errorResult $ "Get console logs failed: " <> T.pack (show (e :: SomeException)))
+        ( \e -> do
+            hPutStrLn stderr ("HANDLER: Exception in get_console_logs: " ++ show (e :: SomeException)) >> hFlush stderr
+            return $ errorResult $ "Get console logs failed: " <> T.pack (show (e :: SomeException))
+        )
 
 -- | Handle get_available_log_types tool
 handleGetAvailableLogTypes :: SeleniumTools -> GetAvailableLogTypesParams -> IO CallToolResult
 handleGetAvailableLogTypes tools _ = do
+  hPutStrLn stderr "HANDLER: get_available_log_types called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
+    Nothing -> do
+      hPutStrLn stderr "HANDLER: No session in get_available_log_types" >> hFlush stderr
+      return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
+            hPutStrLn stderr "HANDLER: Getting log types from WebDriver" >> hFlush stderr
             logTypes <- getAvailableLogTypes session
+            hPutStrLn stderr ("HANDLER: Got log types: " ++ show logTypes) >> hFlush stderr
             let responseText = TE.decodeUtf8 $ BSL.toStrict $ encode $ object ["logTypes" .= logTypes]
-            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+            hPutStrLn stderr ("HANDLER: Returning log types response: " ++ T.unpack responseText) >> hFlush stderr
+            return $ successResult responseText
         )
-        (\e -> return $ errorResult $ "Get available log types failed: " <> T.pack (show (e :: SomeException)))
+        ( \e -> do
+            hPutStrLn stderr ("HANDLER: Exception in get_available_log_types: " ++ show (e :: SomeException)) >> hFlush stderr
+            return $ errorResult $ "Get available log types failed: " <> T.pack (show (e :: SomeException))
+        )
 
 -- | Handle inject_console_logger tool
 handleInjectConsoleLogger :: SeleniumTools -> InjectConsoleLoggerParams -> IO CallToolResult
 handleInjectConsoleLogger tools _ = do
+  hPutStrLn stderr "HANDLER: inject_console_logger called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
+    Nothing -> do
+      hPutStrLn stderr "HANDLER: No session in inject_console_logger" >> hFlush stderr
+      return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
+            hPutStrLn stderr "HANDLER: Injecting console logger" >> hFlush stderr
             injectConsoleLogger session
+            hPutStrLn stderr "HANDLER: Console logger injected successfully" >> hFlush stderr
             return $ successResult "Console logger injected successfully"
         )
-        (\e -> return $ errorResult $ "Inject console logger failed: " <> T.pack (show (e :: SomeException)))
+        ( \e -> do
+            hPutStrLn stderr ("HANDLER: Exception in inject_console_logger: " ++ show (e :: SomeException)) >> hFlush stderr
+            return $ errorResult $ "Inject console logger failed: " <> T.pack (show (e :: SomeException))
+        )
 
 -- | Handle get_injected_console_logs tool
 handleGetInjectedConsoleLogs :: SeleniumTools -> GetInjectedConsoleLogsParams -> IO CallToolResult
 handleGetInjectedConsoleLogs tools (GetInjectedConsoleLogsParams clearVal) = do
+  hPutStrLn stderr "HANDLER: get_injected_console_logs called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
+    Nothing -> do
+      hPutStrLn stderr "HANDLER: No session in get_injected_console_logs" >> hFlush stderr
+      return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let shouldClear = fromMaybe False clearVal
+            hPutStrLn stderr ("HANDLER: Getting injected logs, clear=" ++ show shouldClear) >> hFlush stderr
             logsJson <- getInjectedConsoleLogs session shouldClear
-            return $ CallToolResult [ToolContent TextualContent (Just logsJson)] False
+            hPutStrLn stderr ("HANDLER: Got injected logs: " ++ T.unpack logsJson) >> hFlush stderr
+            return $ successResult logsJson
         )
-        (\e -> return $ errorResult $ "Get injected console logs failed: " <> T.pack (show (e :: SomeException)))
+        ( \e -> do
+            hPutStrLn stderr ("HANDLER: Exception in get_injected_console_logs: " ++ show (e :: SomeException)) >> hFlush stderr
+            return $ errorResult $ "Get injected console logs failed: " <> T.pack (show (e :: SomeException))
+        )
 
 -- | Create selenium tools instance
 createSeleniumTools :: IO SeleniumTools
