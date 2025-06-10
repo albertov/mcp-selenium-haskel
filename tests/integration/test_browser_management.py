@@ -11,8 +11,8 @@ class TestBrowserManagement:
         tools = await mcp_client.list_tools()
 
         expected_tools = [
-            "StartBrowser", "Navigate", "FindElement", "Click",
-            "SendKeys", "GetText", "TakeScreenshot"
+            "start_browser", "navigate", "find_element", "click_element",
+            "send_keys", "get_element_text", "take_screenshot"
         ]
 
         for tool in expected_tools:

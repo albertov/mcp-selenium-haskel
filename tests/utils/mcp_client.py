@@ -69,7 +69,7 @@ class MCPSeleniumClient:
             "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
         }
 
-        return await self.call_tool("StartBrowser", {
+        return await self.call_tool("start_browser", {
             "browser": browser,
             "opts": options,
             "enableLogging": True
@@ -77,11 +77,11 @@ class MCPSeleniumClient:
 
     async def navigate(self, url: str) -> Dict[str, Any]:
         """Navigate to URL"""
-        return await self.call_tool("Navigate", {"url": url})
+        return await self.call_tool("navigate", {"url": url})
 
     async def find_element(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
         """Find element on page"""
-        return await self.call_tool("FindElement", {
+        return await self.call_tool("find_element", {
             "strategy": by,
             "value": value,
             "timeout": timeout
@@ -89,11 +89,11 @@ class MCPSeleniumClient:
 
     async def click_element(self, element_id: str) -> Dict[str, Any]:
         """Click an element"""
-        return await self.call_tool("Click", {"elementId": element_id})
+        return await self.call_tool("click_element", {"elementId": element_id})
 
     async def send_keys(self, element_id: str, text: str) -> Dict[str, Any]:
         """Send keys to element"""
-        return await self.call_tool("SendKeys", {
+        return await self.call_tool("send_keys", {
             "elementId": element_id,
             "text": text
         })
@@ -103,4 +103,4 @@ class MCPSeleniumClient:
         args = {}
         if element_id:
             args["elementId"] = element_id
-        return await self.call_tool("TakeScreenshot", args)
+        return await self.call_tool("take_screenshot", args)

@@ -40,9 +40,11 @@ where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON)
+import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import MCP.Selenium.WebDriver
 import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType (..))
@@ -50,7 +52,9 @@ import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType
 -- | Tool parameter types
 data StartBrowserParams = StartBrowserParams
   { browser :: Browser,
-    options :: Maybe BrowserOptions
+    options :: Maybe BrowserOptions,
+    opts :: Maybe BrowserOptions,
+    enableLogging :: Maybe Bool
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -60,7 +64,8 @@ newtype NavigateParams = NavigateParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data FindElementParams = FindElementParams
-  { by :: T.Text,
+  { by :: Maybe T.Text,
+    strategy :: Maybe T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
@@ -166,13 +171,14 @@ errorResult msg =
 
 -- | Handle start_browser tool
 handleStartBrowser :: SeleniumTools -> StartBrowserParams -> IO CallToolResult
-handleStartBrowser tools (StartBrowserParams browserVal optionsVal) = do
-  let opts = case optionsVal of
-        Nothing -> BrowserOptions Nothing Nothing
-        Just o -> o
+handleStartBrowser tools (StartBrowserParams browserVal optionsVal optsVal _) = do
+  let finalOpts = case (optionsVal, optsVal) of
+        (Just o, _) -> o
+        (Nothing, Just o) -> o
+        (Nothing, Nothing) -> BrowserOptions Nothing Nothing
   catch
     ( do
-        session <- initializeSession browserVal opts
+        session <- initializeSession browserVal finalOpts
         atomically $ writeTVar (sessionVar tools) (Just session)
         return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
     )
@@ -194,17 +200,25 @@ handleNavigate tools params = do
 
 -- | Handle find_element tool
 handleFindElement :: SeleniumTools -> FindElementParams -> IO CallToolResult
-handleFindElement tools (FindElementParams byVal valueVal timeoutVal) = do
+handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal) = do
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
-            let locator = parseLocatorStrategy byVal valueVal
+            let byStrategy = case (byVal, strategyVal) of
+                  (Just b, _) -> b
+                  (Nothing, Just s) -> s
+                  (Nothing, Nothing) -> "id" -- default
+                locator = parseLocatorStrategy byStrategy valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            _ <- findElementByLocator session locator timeoutMs
-            return $ successResult $ "Element found with " <> byVal <> "='" <> valueVal <> "'"
+            element <- findElementByLocator session locator timeoutMs
+            -- Return element information with proper JSON encoding
+            let elementIdText = T.pack (show element)
+                responseJson = object [("elementId", toJSON elementIdText), ("found", toJSON True)]
+                responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
         )
         (\e -> return $ errorResult $ "Element not found: " <> T.pack (show (e :: SomeException)))
 

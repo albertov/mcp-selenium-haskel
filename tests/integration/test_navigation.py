@@ -27,4 +27,6 @@ class TestNavigation:
         result = await mcp_client.navigate("http://example.com")
 
         # Should return error since no browser session exists
-        assert "error" in result or "no browser" in result.get("text", "").lower()
+        assert ("error" in result or
+                "no browser" in result.get("text", "").lower() or
+                "no active browser" in result.get("text", "").lower())
