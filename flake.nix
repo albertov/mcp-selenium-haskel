@@ -6,7 +6,14 @@
     url = "github:numtide/treefmt-nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  outputs = inputs@{ nixpkgs, flake-utils, haskellNix, ... }:
+  outputs =
+    inputs@{
+      self,
+      nixpkgs,
+      flake-utils,
+      haskellNix,
+      ...
+    }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -15,28 +22,33 @@
         #"aarch64-darwin"
       ];
     in
-    flake-utils.lib.eachSystem supportedSystems (system:
+    flake-utils.lib.eachSystem supportedSystems (
+      system:
       let
         overlays = [
           haskellNix.overlay
           (final: _prev: {
             inherit hoogle;
-            hixProject =
-              final.haskell-nix.hix.project {
-                src = builtins.path { path = ./.; name = "source"; };
-                evalSystem = "x86_64-linux";
+            hixProject = final.haskell-nix.hix.project {
+              src = builtins.path {
+                path = ./.;
+                name = "source";
               };
+              evalSystem = "x86_64-linux";
+            };
           })
         ];
-        pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
+        pkgs = import nixpkgs {
+          inherit system overlays;
+          inherit (haskellNix) config;
+        };
         flake = pkgs.hixProject.flake { };
 
         hoogleEnv = pkgs.hixProject.ghcWithHoogle (
-          _: builtins.attrValues
-            (
-              pkgs.lib.filterAttrs (_: p: p.isLocal or false && p.components ? library)
-                pkgs.hixProject.hsPkgs
-            )
+          _:
+          builtins.attrValues (
+            pkgs.lib.filterAttrs (_: p: p.isLocal or false && p.components ? library) pkgs.hixProject.hsPkgs
+          )
         );
         hoogle = pkgs.writeShellApplication {
           name = "hoogle";
@@ -45,22 +57,23 @@
             hoogle "$@"
           '';
         };
+        treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
       in
-      flake // {
+      pkgs.lib.recursiveUpdate flake {
         legacyPackages = pkgs;
 
-        packages = flake.packages // { default = flake.packages."mcp-selenium:exe:mcp-selenium-hs"; };
-
-        formatter = inputs.treefmt-nix.lib.mkWrapper pkgs {
-          projectRootFile = "flake.nix";
-          programs = {
-            nixpkgs-fmt.enable = true;
-            ormolu.enable = true;
-            deadnix.enable = true;
-            shellcheck.enable = true;
-          };
+        packages = flake.packages // {
+          default = flake.packages."mcp-selenium:exe:mcp-selenium-hs";
         };
-      });
+
+        formatter = treefmtEval.config.build.wrapper;
+
+        # for `nix flake check`
+        checks = {
+          formatting = treefmtEval.config.build.check self;
+        };
+      }
+    );
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
