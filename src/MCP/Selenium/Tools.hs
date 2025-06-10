@@ -38,9 +38,10 @@ module MCP.Selenium.Tools
   )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVar, readTVar, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, newTVar, newTVarIO, readTVar, readTVarIO, writeTVar)
 import Control.Exception (SomeException, catch)
 import Data.Aeson (FromJSON, ToJSON, Value (..), object, (.=))
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import MCP.Selenium.WebDriver
@@ -54,7 +55,7 @@ data StartBrowserParams = StartBrowserParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data NavigateParams = NavigateParams
+newtype NavigateParams = NavigateParams
   { url :: T.Text
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -118,7 +119,7 @@ data RightClickParams = RightClickParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data PressKeyParams = PressKeyParams
+newtype PressKeyParams = PressKeyParams
   { key :: T.Text
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -131,7 +132,7 @@ data UploadFileParams = UploadFileParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data TakeScreenshotParams = TakeScreenshotParams
+newtype TakeScreenshotParams = TakeScreenshotParams
   { outputPath :: Maybe T.Text
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -140,7 +141,7 @@ data CloseSessionParams = CloseSessionParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Selenium tools container
-data SeleniumTools = SeleniumTools
+newtype SeleniumTools = SeleniumTools
   { sessionVar :: TVar (Maybe SeleniumSession)
   }
 
@@ -170,20 +171,18 @@ handleStartBrowser tools (StartBrowserParams browserVal optionsVal) = do
   let opts = case optionsVal of
         Nothing -> BrowserOptions Nothing Nothing
         Just o -> o
-  result <-
-    catch
-      ( do
-          session <- initializeSession browserVal opts
-          atomically $ writeTVar (sessionVar tools) (Just session)
-          return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
-      )
-      (\e -> return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException)))
-  return result
+  catch
+    ( do
+        session <- initializeSession browserVal opts
+        atomically $ writeTVar (sessionVar tools) (Just session)
+        return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
+    )
+    (\e -> return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle navigate tool
 handleNavigate :: SeleniumTools -> NavigateParams -> IO CallToolResult
 handleNavigate tools params = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
@@ -197,14 +196,14 @@ handleNavigate tools params = do
 -- | Handle find_element tool
 handleFindElement :: SeleniumTools -> FindElementParams -> IO CallToolResult
 handleFindElement tools (FindElementParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             _ <- findElementByLocator session locator timeoutMs
             return $ successResult $ "Element found with " <> byVal <> "='" <> valueVal <> "'"
         )
@@ -213,14 +212,14 @@ handleFindElement tools (FindElementParams byVal valueVal timeoutVal) = do
 -- | Handle click_element tool
 handleClickElement :: SeleniumTools -> ClickElementParams -> IO CallToolResult
 handleClickElement tools (ClickElementParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             clickElement session locator timeoutMs
             return $ successResult $ "Clicked element with " <> byVal <> "='" <> valueVal <> "'"
         )
@@ -229,14 +228,14 @@ handleClickElement tools (ClickElementParams byVal valueVal timeoutVal) = do
 -- | Handle send_keys tool
 handleSendKeys :: SeleniumTools -> SendKeysParams -> IO CallToolResult
 handleSendKeys tools (SendKeysParams byVal valueVal textVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             sendKeysToElement session locator textVal timeoutMs
             return $ successResult $ "Sent keys to element with " <> byVal <> "='" <> valueVal <> "'"
         )
@@ -245,14 +244,14 @@ handleSendKeys tools (SendKeysParams byVal valueVal textVal timeoutVal) = do
 -- | Handle get_element_text tool
 handleGetElementText :: SeleniumTools -> GetElementTextParams -> IO CallToolResult
 handleGetElementText tools (GetElementTextParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             elementText <- getElementText session locator timeoutMs
             return $ successResult $ "Element text: " <> elementText
         )
@@ -261,14 +260,14 @@ handleGetElementText tools (GetElementTextParams byVal valueVal timeoutVal) = do
 -- | Handle hover tool
 handleHover :: SeleniumTools -> HoverParams -> IO CallToolResult
 handleHover tools (HoverParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             hoverElement session locator timeoutMs
             return $ successResult $ "Hovered over element with " <> byVal <> "='" <> valueVal <> "'"
         )
@@ -277,7 +276,7 @@ handleHover tools (HoverParams byVal valueVal timeoutVal) = do
 -- | Handle drag_and_drop tool
 handleDragAndDrop :: SeleniumTools -> DragAndDropParams -> IO CallToolResult
 handleDragAndDrop tools (DragAndDropParams byVal valueVal targetByVal targetValueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
@@ -285,7 +284,7 @@ handleDragAndDrop tools (DragAndDropParams byVal valueVal targetByVal targetValu
         ( do
             let sourceLocator = parseLocatorStrategy byVal valueVal
                 targetLocator = parseLocatorStrategy targetByVal targetValueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             dragAndDropElements session sourceLocator targetLocator timeoutMs
             return $
               successResult $
@@ -304,14 +303,14 @@ handleDragAndDrop tools (DragAndDropParams byVal valueVal targetByVal targetValu
 -- | Handle double_click tool
 handleDoubleClick :: SeleniumTools -> DoubleClickParams -> IO CallToolResult
 handleDoubleClick tools (DoubleClickParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             doubleClickElement session locator timeoutMs
             return $ successResult $ "Double-clicked element with " <> byVal <> "='" <> valueVal <> "'"
         )
@@ -320,14 +319,14 @@ handleDoubleClick tools (DoubleClickParams byVal valueVal timeoutVal) = do
 -- | Handle right_click tool
 handleRightClick :: SeleniumTools -> RightClickParams -> IO CallToolResult
 handleRightClick tools (RightClickParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             rightClickElement session locator timeoutMs
             return $ successResult $ "Right-clicked element with " <> byVal <> "='" <> valueVal <> "'"
         )
@@ -336,7 +335,7 @@ handleRightClick tools (RightClickParams byVal valueVal timeoutVal) = do
 -- | Handle press_key tool
 handlePressKey :: SeleniumTools -> PressKeyParams -> IO CallToolResult
 handlePressKey tools (PressKeyParams keyVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
@@ -350,14 +349,14 @@ handlePressKey tools (PressKeyParams keyVal) = do
 -- | Handle upload_file tool
 handleUploadFile :: SeleniumTools -> UploadFileParams -> IO CallToolResult
 handleUploadFile tools (UploadFileParams byVal valueVal filePathVal timeoutVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
-                timeoutMs = maybe 10000 id timeoutVal
+                timeoutMs = fromMaybe 10000 timeoutVal
             uploadFileToElement session locator filePathVal timeoutMs
             return $
               successResult $
@@ -374,7 +373,7 @@ handleUploadFile tools (UploadFileParams byVal valueVal filePathVal timeoutVal) 
 -- | Handle take_screenshot tool
 handleTakeScreenshot :: SeleniumTools -> TakeScreenshotParams -> IO CallToolResult
 handleTakeScreenshot tools (TakeScreenshotParams outputPathVal) = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
@@ -388,7 +387,7 @@ handleTakeScreenshot tools (TakeScreenshotParams outputPathVal) = do
 -- | Handle close_session tool
 handleCloseSession :: SeleniumTools -> CloseSessionParams -> IO CallToolResult
 handleCloseSession tools _ = do
-  sessionMaybe <- atomically $ readTVar (sessionVar tools)
+  sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ successResult "No active session to close"
     Just session ->
@@ -403,5 +402,5 @@ handleCloseSession tools _ = do
 -- | Create selenium tools instance
 createSeleniumTools :: IO SeleniumTools
 createSeleniumTools = do
-  sessionVar <- atomically $ newTVar Nothing
+  sessionVar <- newTVarIO Nothing
   return $ SeleniumTools sessionVar
