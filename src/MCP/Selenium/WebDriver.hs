@@ -111,6 +111,8 @@ createWebDriverConfig browserType opts =
         Chrome -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.chrome}}
         Firefox -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.firefox}}
       -- Ensure we're using the default Selenium server URL (localhost:4444)
+      --FIXME: Make configurable. This needs to be read from environment
+      -- variables and default to these values if missing from environ
       configWithHost = baseConfig {WD.wdHost = "127.0.0.1", WD.wdPort = 4444}
       chromeCapabilities :: WD.Capabilities
       chromeCapabilities =
@@ -271,6 +273,7 @@ injectConsoleLogger :: SeleniumSession -> IO ()
 injectConsoleLogger (SeleniumSession _ session) = do
   WD.runWD session $ do
     (_ :: Maybe ()) <-
+      --FIXME: Use raw-strings-qq to clean this string up
       executeJS [] $
         "if (!window._consoleLogsCaptured) {\
         \  window._consoleLogsCaptured = [];\

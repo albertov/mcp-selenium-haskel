@@ -66,6 +66,7 @@ library
     webdriver,
     hs-mcp,
     stm,
+    raw-strings-qq
 
 
 executable mcp-selenium-hs

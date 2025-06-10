@@ -14,6 +14,9 @@ You MUST always run the 'test' tool on every package you modify and fix any erro
 
 You MUST always use explicit import and export lists.
 
+When your work is almost ready, you MUST run the 'integration-test' tool make sure
+everything still works. Fix it otherwise
+
 When your work is ready, you MUST run the 'changed_files' tool to get a list of all the files
 that have been modified in this branch and bump the version and update the
 changelog of all packages that have been modified, not the ones that have been
@@ -29,7 +32,7 @@ command = ["./run_integration_tests.sh"]
 doc = """
 Runs the integration tests. This command does not accept arguments
 
-The tests run with a 20 second timeout (do not change this). If you see this
+The tests run with a 60 second timeout (do not change this). If you see this
 command is killed then this is the reason.
 """
 
