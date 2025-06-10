@@ -1,0 +1,150 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+module Main (main) where
+
+import Control.Exception (SomeException, catch)
+import Data.Aeson (decode, encode)
+import qualified Data.Text as T
+import MCP.Selenium.Server
+import MCP.Selenium.Tools
+import MCP.Selenium.WebDriver
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck
+
+-- | Test suite for mcp-selenium
+main :: IO ()
+main = hspec $ do
+  describe "MCP.Selenium.WebDriver" $ do
+    describe "Browser" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let browser = Chrome
+        decode (encode browser) `shouldBe` Just browser
+
+      it "supports both Chrome and Firefox" $ do
+        encode Chrome `shouldNotBe` encode Firefox
+
+    describe "BrowserOptions" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let opts = BrowserOptions (Just True) (Just ["--no-sandbox"])
+        decode (encode opts) `shouldBe` Just opts
+
+      it "handles empty options" $ do
+        let opts = BrowserOptions Nothing Nothing
+        decode (encode opts) `shouldBe` Just opts
+
+    describe "LocatorStrategy" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let locator = ById "test-id"
+        decode (encode locator) `shouldBe` Just locator
+
+      it "supports all locator types" $ do
+        let locators =
+              [ ById "test",
+                ByCss ".test",
+                ByXPath "//div",
+                ByName "test",
+                ByTag "div",
+                ByClass "test"
+              ]
+        mapM_ (\loc -> decode (encode loc) `shouldBe` Just loc) locators
+
+  describe "MCP.Selenium.Tools" $ do
+    describe "StartBrowserParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = StartBrowserParams Chrome (Just $ BrowserOptions (Just True) Nothing)
+        decode (encode params) `shouldBe` Just params
+
+    describe "NavigateParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = NavigateParams "https://example.com"
+        decode (encode params) `shouldBe` Just params
+
+    describe "FindElementParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = FindElementParams "id" "test-element" (Just 5000)
+        decode (encode params) `shouldBe` Just params
+
+    describe "ClickElementParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = ClickElementParams "css" ".button" Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "SendKeysParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = SendKeysParams "name" "username" "testuser" (Just 3000)
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetElementTextParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetElementTextParams "xpath" "//h1" Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "HoverParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = HoverParams "class" "menu-item" (Just 2000)
+        decode (encode params) `shouldBe` Just params
+
+    describe "DragAndDropParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = DragAndDropParams "id" "draggable" "id" "droppable" Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "DoubleClickParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = DoubleClickParams "tag" "button" (Just 1000)
+        decode (encode params) `shouldBe` Just params
+
+    describe "RightClickParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = RightClickParams "css" ".context-menu" Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "PressKeyParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = PressKeyParams "Enter"
+        decode (encode params) `shouldBe` Just params
+
+    describe "UploadFileParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = UploadFileParams "id" "file-input" "/path/to/file.txt" (Just 5000)
+        decode (encode params) `shouldBe` Just params
+
+    describe "TakeScreenshotParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = TakeScreenshotParams (Just "/tmp/screenshot.png")
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional output path" $ do
+        let params = TakeScreenshotParams Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "CloseSessionParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = CloseSessionParams
+        decode (encode params) `shouldBe` Just params
+
+    describe "createSeleniumTools" $ do
+      it "creates tools instance without errors" $ do
+        tools <- createSeleniumTools
+        -- Basic check that it doesn't throw
+        tools `seq` return ()
+
+  describe "MCP.Selenium.Server" $ do
+    describe "createSeleniumServer" $ do
+      it "creates server without errors" $ do
+        server <- createSeleniumServer
+        -- Basic check that it doesn't throw
+        server `seq` return ()
+
+  describe "Property tests" $ do
+    prop "Browser round-trip through JSON" $ \browser ->
+      decode (encode browser) == Just (browser :: Browser)
+
+    prop "BrowserOptions with valid headless setting" $ \headless ->
+      let opts = BrowserOptions (Just headless) Nothing
+       in decode (encode opts) == Just opts
+
+    prop "Text parameters survive JSON round-trip" $ \text ->
+      let params = NavigateParams text
+       in decode (encode params) == Just params

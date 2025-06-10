@@ -38,9 +38,9 @@ source-repository head
 
 library
   exposed-modules:
-    --MCP.Selenium.Server
-    --MCP.Selenium.Tools
-    --MCP.Selenium.WebDriver
+    MCP.Selenium.Server
+    MCP.Selenium.Tools
+    MCP.Selenium.WebDriver
 
   hs-source-dirs: src
 

@@ -39,11 +39,11 @@
             )
         );
         hoogle = pkgs.writeShellApplication {
-            name = "hoogle";
-            runtimeInputs = [ hoogleEnv ];
-            text = ''
-              hoogle "$@"
-            '';
+          name = "hoogle";
+          runtimeInputs = [ hoogleEnv ];
+          text = ''
+            hoogle "$@"
+          '';
         };
       in
       flake // {
