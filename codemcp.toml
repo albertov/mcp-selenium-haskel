@@ -24,6 +24,10 @@ newly created.
 command = ["nix", "fmt"]
 doc = "Must pass the name of the haskell file that needs formatting as an argument"
 
+[commands.integration-test]
+command = ["./run_integration_tests.sh"]
+doc = "Runs the integration tests. This command does not accept arguments"
+
 [commands.test]
 command = ["cabal", "test"]
 doc = "Accepts the name of a single package as an argument to run their specific tests"
