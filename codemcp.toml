@@ -63,7 +63,7 @@ command = ["hlint"]
 doc = "Run hlint on the file passed as argument to report errors"
 
 [commands.changed_files]
-command = ["git", "diff", "--name-only", "origin/master...HEAD"]
+command = ["git", "diff", "--name-only", "origin/main...HEAD"]
 doc = "List the file names that have been changed in this branch"
 
 [logger]
