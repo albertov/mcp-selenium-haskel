@@ -39,8 +39,8 @@ import GHC.Generics (Generic)
 import Test.WebDriver hiding (Browser, ByClass, ById, ByName, ByTag, ByXPath, Chrome, Firefox)
 import qualified Test.WebDriver as WD
 import qualified Test.WebDriver.Commands as WDC
-import Test.WebDriver.Config (WDConfig, defaultCaps, defaultConfig, mkSession)
-import Test.WebDriver.Session (WDSession (..), getSession)
+import Test.WebDriver.Config (mkSession)
+import Test.WebDriver.Session (WDSession (..))
 
 -- | Browser type enumeration
 data Browser = Chrome | Firefox
