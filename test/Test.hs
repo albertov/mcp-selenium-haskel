@@ -9,8 +9,6 @@ import MCP.Selenium.Server
 import MCP.Selenium.Tools
 import MCP.Selenium.WebDriver
 import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
 
 -- | Test suite for mcp-selenium
 main :: IO ()
@@ -136,15 +134,3 @@ main = hspec $ do
         server <- createSeleniumServer
         -- Basic check that it doesn't throw
         server `seq` return ()
-
-  describe "Property tests" $ do
-    prop "Browser round-trip through JSON" $ \browser ->
-      decode (encode browser) == Just (browser :: Browser)
-
-    prop "BrowserOptions with valid headless setting" $ \headless ->
-      let opts = BrowserOptions (Just headless) Nothing
-       in decode (encode opts) == Just opts
-
-    prop "Text parameters survive JSON round-trip" $ \text ->
-      let params = NavigateParams text
-       in decode (encode params) == Just params

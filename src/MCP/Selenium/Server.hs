@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -11,57 +9,84 @@ module MCP.Selenium.Server
 where
 
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, Value (..), decode, withObject, (.:))
+import Data.Aeson (FromJSON, ToJSON, Value (..), decode, object, parseJSON, withObject, (.:), (.=))
+import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (Parser, parseMaybe)
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import MCP.Selenium.Tools
 import MCP.Selenium.WebDriver
-import Network.MCP.Server (Server (..))
+import Network.MCP.Server (Server, createServer, registerToolCallHandler, registerTools)
 import Network.MCP.Server.StdIO (runServerWithSTDIO)
 import Network.MCP.Server.Types (ToolCallHandler)
-import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Tool (..), ToolContent (..), ToolContentType (..))
+import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Implementation (..), ServerCapabilities (..), Tool (..), ToolContent (..), ToolContentType (..), ToolsCapability (..))
 
 -- | Create a complete Selenium MCP server with all tools
 createSeleniumServer :: IO Server
 createSeleniumServer = do
   tools <- createSeleniumTools
-  let server = emptyServer "mcp-selenium-haskell" "1.0.0"
 
-  -- Add all selenium tools
-  server' <- addTool server startBrowserTool (createHandler tools handleStartBrowser)
-  server'' <- addTool server' navigateTool (createHandler tools handleNavigate)
-  server''' <- addTool server'' findElementTool (createHandler tools handleFindElement)
-  server'''' <- addTool server''' clickElementTool (createHandler tools handleClickElement)
-  server''''' <- addTool server'''' sendKeysTool (createHandler tools handleSendKeys)
-  server'''''' <- addTool server''''' getElementTextTool (createHandler tools handleGetElementText)
-  server''''''' <- addTool server'''''' hoverTool (createHandler tools handleHover)
-  server'''''''' <- addTool server''''''' dragAndDropTool (createHandler tools handleDragAndDrop)
-  server''''''''' <- addTool server'''''''' doubleClickTool (createHandler tools handleDoubleClick)
-  server'''''''''' <- addTool server''''''''' rightClickTool (createHandler tools handleRightClick)
-  server''''''''''' <- addTool server'''''''''' pressKeyTool (createHandler tools handlePressKey)
-  server'''''''''''' <- addTool server''''''''''' uploadFileTool (createHandler tools handleUploadFile)
-  server''''''''''''' <- addTool server'''''''''''' takeScreenshotTool (createHandler tools handleTakeScreenshot)
-  finalServer <- addTool server''''''''''''' closeSessionTool (createHandler tools handleCloseSession)
+  let serverInfo = Implementation "mcp-selenium-haskell" "1.0.0"
+      serverCapabilities =
+        ServerCapabilities
+          { resourcesCapability = Nothing,
+            toolsCapability = Just (ToolsCapability True),
+            promptsCapability = Nothing
+          }
+      instructions = "Selenium WebDriver automation server for browser automation tasks"
 
-  return finalServer
+  server <- createServer serverInfo serverCapabilities instructions
 
--- | Generic handler creator that parses JSON parameters
-createHandler ::
-  (FromJSON params) =>
-  SeleniumTools ->
-  (SeleniumTools -> params -> IO CallToolResult) ->
-  ToolCallHandler
-createHandler tools handler request = do
-  case parseMaybe parseParams (arguments request) of
-    Nothing ->
-      return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
-    Just params -> handler tools params
+  -- Register all tools
+  let allTools =
+        [ startBrowserTool,
+          navigateTool,
+          findElementTool,
+          clickElementTool,
+          sendKeysTool,
+          getElementTextTool,
+          hoverTool,
+          dragAndDropTool,
+          doubleClickTool,
+          rightClickTool,
+          pressKeyTool,
+          uploadFileTool,
+          takeScreenshotTool,
+          closeSessionTool
+        ]
+
+  registerTools server allTools
+  registerToolCallHandler server (createHandler tools)
+
+  return server
+
+-- | Generic handler that routes tool calls to appropriate handlers
+createHandler :: SeleniumTools -> ToolCallHandler
+createHandler tools request = do
+  case callToolName request of
+    "start_browser" -> parseAndHandle handleStartBrowser
+    "navigate" -> parseAndHandle handleNavigate
+    "find_element" -> parseAndHandle handleFindElement
+    "click_element" -> parseAndHandle handleClickElement
+    "send_keys" -> parseAndHandle handleSendKeys
+    "get_element_text" -> parseAndHandle handleGetElementText
+    "hover" -> parseAndHandle handleHover
+    "drag_and_drop" -> parseAndHandle handleDragAndDrop
+    "double_click" -> parseAndHandle handleDoubleClick
+    "right_click" -> parseAndHandle handleRightClick
+    "press_key" -> parseAndHandle handlePressKey
+    "upload_file" -> parseAndHandle handleUploadFile
+    "take_screenshot" -> parseAndHandle handleTakeScreenshot
+    "close_session" -> parseAndHandle handleCloseSession
+    _ -> return $ CallToolResult [ToolContent TextualContent (Just "Unknown tool")] True
   where
-    parseParams :: Value -> Parser params
-    parseParams = withObject "parameters" $ \obj -> do
-      -- Try to parse the entire object as the parameter type
-      pure <$> parseJSON (Object obj)
+    parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
+    parseAndHandle handler = do
+      case parseMaybe parseJSON (object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))) of
+        Nothing ->
+          return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
+        Just params -> handler tools params
 
 -- | Tool definitions
 startBrowserTool :: Tool
@@ -448,9 +473,9 @@ takeScreenshotTool =
 closeSessionTool :: Tool
 closeSessionTool =
   Tool
-    { name = "close_session",
-      description = "Closes the current browser session and cleans up resources",
-      inputSchema =
+    { toolName = "close_session",
+      toolDescription = Just "Closes the current browser session and cleans up resources",
+      toolInputSchema =
         object
           [ "type" .= ("object" :: T.Text)
           ]
