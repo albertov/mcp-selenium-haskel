@@ -20,6 +20,7 @@
         overlays = [
           haskellNix.overlay
           (final: _prev: {
+            inherit hoogle;
             hixProject =
               final.haskell-nix.hix.project {
                 src = ./.;
@@ -29,6 +30,14 @@
         ];
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
         flake = pkgs.hixProject.flake { };
+
+        hoogle = pkgs.hixProject.ghcWithHoogle (
+          _: builtins.attrValues
+            (
+              pkgs.lib.filterAttrs (_: p: p.isLocal or false && p.components ? library)
+                pkgs.hixProject.hsPkgs
+            )
+        );
       in
       flake // {
         legacyPackages = pkgs;
