@@ -63,7 +63,8 @@
         legacyPackages = pkgs;
 
         packages = flake.packages // {
-          default = flake.packages."mcp-selenium:exe:mcp-selenium-hs";
+          default =
+            pkgs.hixProject.projectCross.musl64.hsPkgs.mcp-selenium.components.exes.mcp-selenium-hs;
         };
 
         formatter = treefmtEval.config.build.wrapper;
