@@ -60,7 +60,12 @@ library
     base64-bytestring,
     unordered-containers,
     webdriver,
-    hs-mcp
+    hs-mcp,
+    stm,
+    async,
+    microlens,
+    generic-lens
+
 
 test-suite mcp-selenium-test
   type: exitcode-stdio-1.0
