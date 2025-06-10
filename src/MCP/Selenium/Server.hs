@@ -14,16 +14,25 @@ import Data.Aeson.Key (fromText)
 import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (parseMaybe)
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import MCP.Selenium.Tools
 import Network.MCP.Server (Server, createServer, registerToolCallHandler, registerTools)
 import Network.MCP.Server.StdIO (runServerWithSTDIO)
 import Network.MCP.Server.Types (ToolCallHandler)
 import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Implementation (..), ServerCapabilities (..), Tool (..), ToolContent (..), ToolContentType (..), ToolsCapability (..))
+import System.IO (hFlush, hPutStrLn, stderr)
+
+-- | Debug logging helper
+debugLog :: String -> IO ()
+debugLog msg = do
+  hPutStrLn stderr $ "SERVER_DEBUG: " ++ msg
+  hFlush stderr
 
 -- | Create a complete Selenium MCP server with all tools
 createSeleniumServer :: IO Server
 createSeleniumServer = do
   tools <- createSeleniumTools
+  debugLog "Created SeleniumTools instance"
 
   let serverInfo = Implementation "mcp-selenium-haskell" "1.0.0"
       serverCapabilities =
@@ -55,13 +64,18 @@ createSeleniumServer = do
         ]
 
   registerTools server allTools
-  registerToolCallHandler server (createHandler tools)
+
+  -- Create handler with the same tools instance
+  let handler = createHandler tools
+  debugLog "Created handler with tools instance"
+  registerToolCallHandler server handler
 
   return server
 
 -- | Generic handler that routes tool calls to appropriate handlers
 createHandler :: SeleniumTools -> ToolCallHandler
 createHandler tools request = do
+  debugLog $ "Handler called for tool: " ++ T.unpack (callToolName request)
   case callToolName request of
     "start_browser" -> parseAndHandle handleStartBrowser
     "navigate" -> parseAndHandle handleNavigate

@@ -48,6 +48,7 @@ import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import MCP.Selenium.WebDriver
 import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType (..))
+import System.IO (hFlush, hPutStrLn, stderr, stdout)
 
 -- | Tool parameter types
 data StartBrowserParams = StartBrowserParams
@@ -172,35 +173,35 @@ errorResult msg =
 -- | Handle start_browser tool
 handleStartBrowser :: SeleniumTools -> StartBrowserParams -> IO CallToolResult
 handleStartBrowser tools (StartBrowserParams browserVal optionsVal optsVal _) = do
+  hPutStrLn stderr "HANDLER: start_browser called" >> hFlush stderr
   let finalOpts = case (optionsVal, optsVal) of
         (Just o, _) -> o
         (Nothing, Just o) -> o
         (Nothing, Nothing) -> BrowserOptions Nothing Nothing
-  putStrLn $ "DEBUG: Starting browser " ++ show browserVal ++ " with options " ++ show finalOpts
   catch
     ( do
         session <- initializeSession browserVal finalOpts
-        putStrLn $ "DEBUG: Created browser session: " ++ show (MCP.Selenium.WebDriver.browser session)
         atomically $ writeTVar (sessionVar tools) (Just session)
-        putStrLn "DEBUG: Stored session in TVar"
         -- Verify the session was stored
         stored <- readTVarIO (sessionVar tools)
         case stored of
-          Just _ -> putStrLn "DEBUG: Session verified in TVar"
-          Nothing -> putStrLn "DEBUG: ERROR - Session not found in TVar after storing!"
+          Just _ -> return ()
+          Nothing -> hPutStrLn stderr "ERROR: Session not stored!" >> hFlush stderr
         return $ successResult $ "Browser " <> T.pack (show browserVal) <> " started successfully"
     )
     ( \e -> do
-        putStrLn $ "DEBUG: Failed to start browser: " ++ show (e :: SomeException)
         return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException))
     )
 
 -- | Handle navigate tool
 handleNavigate :: SeleniumTools -> NavigateParams -> IO CallToolResult
 handleNavigate tools params = do
+  hPutStrLn stderr "HANDLER: navigate called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
+    Nothing -> do
+      hPutStrLn stderr "HANDLER: No session in navigate" >> hFlush stderr
+      return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
@@ -212,14 +213,14 @@ handleNavigate tools params = do
 -- | Handle find_element tool
 handleFindElement :: SeleniumTools -> FindElementParams -> IO CallToolResult
 handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal) = do
+  hPutStrLn stderr "HANDLER: find_element called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   -- Debug logging
   case sessionMaybe of
     Nothing -> do
-      putStrLn "DEBUG: No active browser session found in sessionVar"
+      hPutStrLn stderr "HANDLER: No session in find_element" >> hFlush stderr
       return $ errorResult "No active browser session"
     Just session -> do
-      putStrLn $ "DEBUG: Found active browser session: " ++ show (MCP.Selenium.WebDriver.browser session)
       catch
         ( do
             let byStrategy = case (byVal, strategyVal) of
@@ -228,17 +229,14 @@ handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal
                   (Nothing, Nothing) -> "id" -- default
                 locator = parseLocatorStrategy byStrategy valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            putStrLn $ "DEBUG: Using locator strategy: " ++ T.unpack byStrategy ++ " with value: " ++ T.unpack valueVal
             element <- findElementByLocator session locator timeoutMs
             -- Return element information with proper JSON encoding
             let elementIdText = T.pack (show element)
                 responseJson = object [("elementId", toJSON elementIdText), ("found", toJSON True)]
                 responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
-            putStrLn $ "DEBUG: Found element: " ++ T.unpack elementIdText
             return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
         )
         ( \e -> do
-            putStrLn $ "DEBUG: Element search failed: " ++ show (e :: SomeException)
             return $ errorResult $ "Element not found: " <> T.pack (show (e :: SomeException))
         )
 
@@ -436,4 +434,5 @@ handleCloseSession tools _ = do
 createSeleniumTools :: IO SeleniumTools
 createSeleniumTools = do
   sessionState <- newTVarIO Nothing
+  hPutStrLn stderr "Creating SeleniumTools instance" >> hFlush stderr
   return $ SeleniumTools sessionState

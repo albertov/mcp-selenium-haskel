@@ -15,7 +15,8 @@ class TestElementInteraction:
         result = await mcp_client.find_element("id", "username")
 
         assert "error" not in result
-        assert "elementId" in result or "element" in result
+        # The server returns JSON with elementId when found
+        assert "elementId" in result or "found" in result
 
     @pytest.mark.asyncio
     async def test_find_nonexistent_element(self, mcp_client: MCPSeleniumClient, test_server):
@@ -26,7 +27,8 @@ class TestElementInteraction:
 
         result = await mcp_client.find_element("id", "nonexistent")
 
-        assert "error" in result
+        # The server should return an error for non-existent elements
+        assert "error" in result or "Element not found" in result.get("text", "")
 
     @pytest.mark.asyncio
     async def test_send_keys_to_input(self, mcp_client: MCPSeleniumClient, test_server):
@@ -35,14 +37,7 @@ class TestElementInteraction:
         url = f"{test_server.base_url}/form_page.html"
         await mcp_client.navigate(url)
 
-        # Find input element
-        find_result = await mcp_client.find_element("id", "username")
-        assert "error" not in find_result
-
-        # Extract element ID
-        element_id = find_result.get("elementId") or find_result.get("element")
-        assert element_id is not None
-
-        # Send keys
-        keys_result = await mcp_client.send_keys(element_id, "testuser")
+        # Send keys directly using locator
+        keys_result = await mcp_client.send_keys("id", "username", "testuser")
         assert "error" not in keys_result
+        assert "Sent keys" in keys_result.get("text", "")

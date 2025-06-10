@@ -26,7 +26,12 @@ doc = "Must pass the name of the haskell file that needs formatting as an argume
 
 [commands.integration-test]
 command = ["./run_integration_tests.sh"]
-doc = "Runs the integration tests. This command does not accept arguments"
+doc = """
+Runs the integration tests. This command does not accept arguments
+
+The tests run with a 20 second timeout (do not change this). If you see this
+command is killed then this is the reason.
+"""
 
 [commands.test]
 command = ["cabal", "test"]

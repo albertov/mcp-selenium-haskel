@@ -101,20 +101,26 @@ class MCPSeleniumClient:
     async def find_element(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
         """Find element on page"""
         return await self.call_tool("find_element", {
-            "strategy": by,
+            "by": by,
             "value": value,
-            "timeout": timeout
+            "timeout": timeout * 1000 if timeout else 10000  # Convert to milliseconds
         })
 
-    async def click_element(self, element_id: str) -> Dict[str, Any]:
+    async def click_element(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
         """Click an element"""
-        return await self.call_tool("click_element", {"elementId": element_id})
+        return await self.call_tool("click_element", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
 
-    async def send_keys(self, element_id: str, text: str) -> Dict[str, Any]:
+    async def send_keys(self, by: str, value: str, text: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
         """Send keys to element"""
         return await self.call_tool("send_keys", {
-            "elementId": element_id,
-            "text": text
+            "by": by,
+            "value": value,
+            "text": text,
+            "timeout": timeout * 1000 if timeout else 10000
         })
 
     async def take_screenshot(self, element_id: Optional[str] = None) -> Dict[str, Any]:
