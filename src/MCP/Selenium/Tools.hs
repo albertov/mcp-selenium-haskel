@@ -48,7 +48,7 @@ import qualified Data.Text.Encoding as TE
 import GHC.Generics (Generic)
 import MCP.Selenium.WebDriver
 import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType (..))
-import System.IO (hFlush, hPutStrLn, stderr, stdout)
+import System.IO (hFlush, hPutStrLn, stderr)
 
 -- | Tool parameter types
 data StartBrowserParams = StartBrowserParams
