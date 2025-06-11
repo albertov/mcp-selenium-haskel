@@ -5,8 +5,8 @@ This document lists identified areas for improvement, missing features, incomple
 ## 🚨 Critical Issues
 
 ### Version Inconsistencies
-- [ ] **Fix version mismatch**: `mcp-selenium.cabal` shows version `0.1.0`, but `Server.hs` declares version `1.0.0`
-- [ ] **Update CHANGELOG**: Version is marked as `UNRELEASED` but should reflect current state
+- [ ] **Fix version mismatch**: `mcp-selenium.cabal` shows version `0.1.0`, but `Server.hs` declares version `1.0.0`. It should be 0.1.0
+- [ ] **Update CHANGELOG**: Version is marked as `UNRELEASED`. Do this when we're ready to release
 - [ ] **Synchronize all version references** across cabal file, server implementation, and documentation
 
 ### Missing GHC Version Support
