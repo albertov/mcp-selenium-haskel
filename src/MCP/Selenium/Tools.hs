@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | MCP Tools for Selenium browser automation
@@ -180,12 +179,12 @@ data UploadFileParams = UploadFileParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data TakeScreenshotParams = TakeScreenshotParams
+newtype TakeScreenshotParams = TakeScreenshotParams
   { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data CloseSessionParams = CloseSessionParams
+newtype CloseSessionParams = CloseSessionParams
   { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -198,7 +197,7 @@ data GetConsoleLogsParams = GetConsoleLogsParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-data GetAvailableLogTypesParams = GetAvailableLogTypesParams
+newtype GetAvailableLogTypesParams = GetAvailableLogTypesParams
   { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
