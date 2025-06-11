@@ -137,7 +137,7 @@ class TestConsoleLogging:
             # Common log types that should be available
             # Note: Chrome may not always report "browser" in available types even when browser logs work
             # "server" logs are the minimum requirement for basic functionality
-            expected_types = ["server"]
+            expected_types = ["server", "browser"]
             for expected_type in expected_types:
                 assert expected_type in log_types, f"Expected '{expected_type}' to be in available log types: {log_types}"
 
