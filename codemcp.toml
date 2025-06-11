@@ -25,6 +25,9 @@ changelog of all packages that have been modified, not the ones that have been
 newly created. Do not do this if the date of the latest entry of the changelog
 is "UNRELEASED". In this case, update the latest entry but do not bump the
 version.
+
+You must also scan for any `*.md` documents that may need an update to reflect
+the changes done and update them.
 """
 
 [commands.format]
