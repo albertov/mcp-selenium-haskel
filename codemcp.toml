@@ -43,6 +43,13 @@ The tests run with a 90 second timeout (do not change this). If you see this
 command is killed then this is the reason.
 """
 
+[commands.nix-update-materialization]
+command = ["nix", "run", ".#updateMaterialization"]
+doc = """
+Updates the Haskell-Nix materialized derivations. Run this when haskell
+dependencies change or the cabal file is update.
+"""
+
 [commands.nix-integration-test]
 command = ["timeout", "90s", "nix", "run", ".#integration-tests"]
 doc = """

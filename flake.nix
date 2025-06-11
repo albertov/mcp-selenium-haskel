@@ -91,15 +91,18 @@
           runtimeInputs = with pkgs; [
             nix
             git
+            rsync
           ];
           text = ''
             set -euo pipefail
 
             echo "🔄 Updating Nix materialization..."
 
+            PLAN_RESULT="$(mktemp -d)/plan"
+
             # Backup the original hix.nix
             cp nix/hix.nix nix/hix.nix.backup
-            trap 'mv nix/hix.nix.backup nix/hix.nix' EXIT
+            trap 'mv nix/hix.nix.backup nix/hix.nix; rm $PLAN_RESULT' EXIT
 
             # Step 1: Temporarily disable materialization by commenting out the line
             echo "📝 Temporarily disabling materialization..."
@@ -107,32 +110,14 @@
 
             # Step 2: Try to build the plan-nix (this will use IFD but generate what we need)
             echo "🏗️ Building project plan..."
-            if nix build .#hixProject.plan-nix --no-link 2>/dev/null; then
-              PLAN_RESULT=$(nix build .#hixProject.plan-nix --no-link --print-out-paths)
-              echo "✅ Successfully built hixProject.plan-nix"
-            elif nix build .#project.plan-nix --no-link 2>/dev/null; then
-              PLAN_RESULT=$(nix build .#project.plan-nix --no-link --print-out-paths)
-              echo "✅ Successfully built project.plan-nix"
-            else
-              echo "❌ Failed to build plan-nix target. Trying alternative approach..."
-              # Try the materialize target if it exists
-              if nix run .#materialize 2>/dev/null; then
-                echo "✅ Successfully ran materialize target"
-                mv nix/hix.nix.backup nix/hix.nix
-                trap - EXIT
-                echo "🎉 Materialization updated successfully using materialize target!"
-                exit 0
-              else
-                echo "❌ Failed to find suitable materialization target"
-                exit 1
-              fi
-            fi
+            nix build .#hixProject.plan-nix -o "$PLAN_RESULT"
 
             # Step 3: Remove old materialized files and copy new ones
             echo "📁 Updating materialized files..."
             rm -rf nix/materialized
             mkdir -p nix/materialized
-            cp -r "$PLAN_RESULT"/* nix/materialized/
+            rsync -a "$PLAN_RESULT"/ nix/materialized/
+            chmod -R u+w nix/materialized
 
             # Step 4: Restore the original hix.nix (re-enable materialization)
             echo "🔧 Re-enabling materialization..."
@@ -141,15 +126,17 @@
 
             # Step 5: Test that it works
             echo "🧪 Testing materialization..."
-            if nix flake check --no-build 2>/dev/null; then
+            git add nix/materialized
+            if nix flake check; then
               echo "✅ Flake check passed"
+              # Step 6: Commit the materialized files
+              echo "📝 Committing materialized files..."
             else
-              echo "⚠️ Flake check had issues, but materialization files were updated"
+              git restore --staged nix/materialized
+              git checkout nix/materialized
+              echo "⚠️ Flake check had issues"
             fi
 
-            # Step 6: Commit the materialized files
-            echo "📝 Committing materialized files..."
-            git add nix/materialized
 
             if git diff --cached --quiet; then
               echo "ℹ️ No changes to commit - materialization was already up to date"
