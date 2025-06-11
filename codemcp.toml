@@ -114,7 +114,7 @@ When asked to lint every haskell file just call it like "lint ."
 """
 
 [commands.branch_diff]
-command = ["./run_branch_diff.sh"]
+command = ["./run_branch_changes.sh"]
 doc = "Show a diff of the changes in this branch against base branch"
 
 [commands.branch_log]
