@@ -15,3 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Element interaction (click, send keys, hover, etc.)
 - Screenshot capabilities
 - MCP server implementation for browser automation
+- Comprehensive integration test suite with 25+ tests
+- Modern Python packaging with pyproject.toml and hatchling
+
+### Changed
+- **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory
+- **BREAKING**: Restructured Python package to use proper module naming (underscores)
+- Modernized build system from `writeShellApplication` to `buildPythonApplication`
+- Updated from manual dependency management to automatic transitive dependency resolution
+- Converted to modern `format = "pyproject"` with `hatchling` build backend
+- Updated integration test scripts to work with new directory structure
+
+### Fixed
+- All FIXMEs related to Python dependency management in flake.nix
+- HTML fixtures directory path to work in both development and packaged environments
+- Import issues by creating proper Python package structure
+- Integration test orchestration to use correct paths
+
+### Technical Details
+- Replaced custom shell scripts with proper Python console script entry points
+- Added pyproject.toml with modern Python packaging standards
+- Improved Nix integration with buildPythonApplication for better dependency management
+- Enhanced test infrastructure with automatic fixture path resolution

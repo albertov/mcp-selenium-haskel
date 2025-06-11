@@ -17,22 +17,23 @@ The testing setup follows this architecture:
 ## Test Organization
 
 ```
-tests/
+integration_tests/
+├── orchestrate_integration_tests.py   # Test orchestration script
 ├── integration/
-│   ├── conftest.py                 # pytest configuration and fixtures
-│   ├── test_browser_management.py  # Browser startup/shutdown tests
-│   ├── test_navigation.py          # URL navigation tests
-│   └── test_element_interaction.py # Element finding and interaction
+│   ├── conftest.py                     # pytest configuration and fixtures
+│   ├── test_browser_management.py      # Browser startup/shutdown tests
+│   ├── test_navigation.py              # URL navigation tests
+│   └── test_element_interaction.py     # Element finding and interaction
 ├── fixtures/
-│   ├── html/                       # Test HTML pages
+│   ├── html/                           # Test HTML pages
 │   │   ├── test_page.html
 │   │   ├── form_page.html
 │   │   └── upload_page.html
 │   └── test_files/
 │       └── sample.txt
 └── utils/
-    ├── mcp_client.py              # MCP client wrapper
-    └── html_server.py             # Local test server
+    ├── mcp_client.py                   # MCP client wrapper
+    └── html_server.py                  # Local test server
 ```
 
 ## Running Tests
@@ -46,7 +47,7 @@ The easiest way to run tests is using the provided orchestration script:
 ./run_integration_tests.sh
 
 # Or directly with the orchestration script
-python3 orchestrate_integration_tests.py
+python3 integration_tests/orchestrate_integration_tests.py
 ```
 
 This script automatically:
@@ -55,6 +56,16 @@ This script automatically:
 3. Builds the mcp-selenium-hs executable
 4. Runs the integration test suite
 5. Stops all services (always, regardless of test outcome)
+
+### Nix-Packaged Tests
+
+You can also run the tests using the modern Nix package:
+
+```bash
+nix run .#integration-tests
+```
+
+This uses a proper Python package built with `buildPythonApplication` and automatic dependency management.
 
 ### Manual Testing
 
@@ -66,7 +77,7 @@ For development and debugging, you can run components manually:
    java -jar selenium-server-standalone-*.jar -port 4444
 
    # Start HTTP server for fixtures (in another terminal)
-   cd tests/fixtures/html
+   cd integration_tests/fixtures/html
    python3 -m http.server 8080
    ```
 
@@ -77,14 +88,18 @@ For development and debugging, you can run components manually:
 
 3. **Run tests:**
    ```bash
+   # Set up Python path and run tests
+   export PYTHONPATH="$(pwd)/integration_tests"
+   cd integration_tests
+
    # Run all integration tests
-   python -m pytest tests/integration/ -v
+   python -m pytest integration/ -v
 
    # Run specific test file
-   python -m pytest tests/integration/test_browser_management.py -v
+   python -m pytest integration/test_browser_management.py -v
 
    # Run with more verbose output
-   python -m pytest tests/integration/ -v -s
+   python -m pytest integration/ -v -s
    ```
 
 ## Test Configuration
@@ -113,14 +128,22 @@ The tests are configured via `pytest.ini` and use the following markers:
 
 ## Dependencies
 
-All required Python packages are provided by the Nix environment:
+All required Python packages are provided by the Nix environment or managed automatically:
 
+### Development Environment
 - `python3` - Python interpreter
 - `pytest` - Test framework
 - `pytest-asyncio` - Async test support
 - `mcp` - MCP Python SDK
 - `selenium-server-standalone` - Selenium server
 - `chromium` - Chrome browser
+
+### Nix Package (Automatic)
+The modern `pyproject.toml` build system automatically manages dependencies:
+- Uses `buildPythonApplication` for proper packaging
+- `hatchling` build backend for modern Python packaging
+- Automatic transitive dependency resolution
+- Integration with Nix dependency management
 
 ## Troubleshooting
 
@@ -130,6 +153,7 @@ All required Python packages are provided by the Nix environment:
 2. **Browser fails to start**: Ensure chromium is installed and accessible
 3. **MCP client connection fails**: Verify the executable path and that it's built
 4. **HTTP server fails**: Check if port 8080 is available
+5. **Import errors**: Ensure `PYTHONPATH` includes `integration_tests/` directory
 
 ### Debug Output
 
@@ -137,7 +161,8 @@ Enable verbose logging by setting environment variables:
 
 ```bash
 export PYTEST_CURRENT_TEST=1
-python -m pytest tests/integration/ -v -s --tb=long
+cd integration_tests
+python -m pytest integration/ -v -s --tb=long
 ```
 
 ### Manual MCP Testing
@@ -159,7 +184,7 @@ echo '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}' | ./path/to/mcp-selen
 
 ### Adding New Tests
 
-1. Create test files in `tests/integration/` following the pattern `test_*.py`
+1. Create test files in `integration_tests/integration/` following the pattern `test_*.py`
 2. Use the existing fixtures and utilities
 3. Follow the async/await pattern for MCP client calls
 4. Add appropriate markers for test categorization

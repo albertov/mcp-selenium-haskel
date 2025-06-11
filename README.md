@@ -103,7 +103,7 @@ This automatically:
 
 ### Documentation
 
-For detailed information about the integration testing setup, see [tests/README.md](tests/README.md).
+For detailed information about the integration testing setup, see [integration_tests/README.md](integration_tests/README.md).
 
 ## Dependencies
 
