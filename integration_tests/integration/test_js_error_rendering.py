@@ -67,11 +67,7 @@ class TestJSErrorRendering:
         await browser.navigate(url)
 
         # Get the heading text - this should work despite JS errors
-        heading_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "page-title",
-            "timeout": 10000
-        })
+        heading_result = await browser.get_element_text("id", "page-title", timeout=10)
 
         assert "error" not in heading_result
         # The heading should contain "Test Page with JavaScript Error"

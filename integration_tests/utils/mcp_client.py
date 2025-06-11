@@ -166,3 +166,86 @@ class MCPSeleniumClient:
         if "error" not in result:
             self.session_id = None
         return result
+
+    async def hover(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Hover over an element"""
+        return await self.call_tool("hover", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def double_click(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Double click an element"""
+        return await self.call_tool("double_click", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def right_click(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Right click an element"""
+        return await self.call_tool("right_click", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def press_key(self, key: str) -> Dict[str, Any]:
+        """Press a key (e.g., 'Enter', 'Tab', 'Escape')"""
+        return await self.call_tool("press_key", {
+            "key": key
+        })
+
+    async def drag_and_drop(self, by: str, value: str, target_by: str, target_value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Drag an element and drop it on another element"""
+        return await self.call_tool("drag_and_drop", {
+            "by": by,
+            "value": value,
+            "targetBy": target_by,
+            "targetValue": target_value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def upload_file(self, by: str, value: str, file_path: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Upload a file to a file input element"""
+        return await self.call_tool("upload_file", {
+            "by": by,
+            "value": value,
+            "filePath": file_path,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def get_element_text(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Get text content of an element"""
+        return await self.call_tool("get_element_text", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def get_console_logs(self, log_level: Optional[str] = None, max_entries: Optional[int] = None) -> Dict[str, Any]:
+        """Get console logs from the browser"""
+        args = {}
+        if log_level:
+            args["logLevel"] = log_level
+        if max_entries:
+            args["maxEntries"] = max_entries
+        return await self.call_tool("get_console_logs", args)
+
+    async def inject_console_logger(self, timeout: Optional[int] = None) -> Dict[str, Any]:
+        """Inject console logger into the current page"""
+        args = {}
+        if timeout:
+            args["timeout"] = timeout
+        return await self.call_tool("inject_console_logger", args)
+
+    async def get_injected_console_logs(self, clear: bool = False) -> Dict[str, Any]:
+        """Get logs from the injected console logger"""
+        return await self.call_tool("get_injected_console_logs", {
+            "clear": clear
+        })
+
+    async def get_available_log_types(self) -> Dict[str, Any]:
+        """Get available log types from the browser"""
+        return await self.call_tool("get_available_log_types", {})

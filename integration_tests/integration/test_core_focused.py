@@ -54,11 +54,7 @@ class TestCoreFunctionality:
         assert "error" not in result
 
         # Get text from element
-        result = await browser.call_tool("get_element_text", {
-            "by": "tag",
-            "value": "h1",
-            "timeout": 10000
-        })
+        result = await browser.get_element_text("tag", "h1", timeout=10)
         assert result["text"] == "Please log in, young grasshopper"
 
         # Take screenshot
@@ -72,13 +68,7 @@ class TestCoreFunctionality:
         await browser.navigate(url)
 
         # Test drag and drop with correct parameter structure
-        result = await browser.call_tool("drag_and_drop", {
-            "by": "id",
-            "value": "test-button",
-            "targetBy": "tag",
-            "targetValue": "body",
-            "timeout": 10000
-        })
+        result = await browser.drag_and_drop("id", "test-button", "tag", "body", timeout=10)
 
         assert "error" not in result
         assert ("drag" in result.get("text", "").lower() or
@@ -90,29 +80,33 @@ class TestCoreFunctionality:
         url = f"{test_server.base_url}/test_page.html"
         await browser.navigate(url)
 
-        result = await browser.call_tool("hover", {
-            "by": "id",
-            "value": "test-button",
-            "timeout": 10000
-        })
+        result = await browser.hover("id", "test-button", timeout=10)
 
         assert "error" not in result
 
     @pytest.mark.asyncio
     async def test_error_handling_without_browser(self, mcp_client: MCPSeleniumClient):
         """Test that operations without browser return appropriate errors"""
-        operations = [
-            ("navigate", {"url": "https://example.com"}),
-            ("find_element", {"by": "id", "value": "test", "timeout": 1000}),
-            ("click_element", {"by": "id", "value": "test", "timeout": 1000}),
-        ]
+        # Test navigate
+        result = await mcp_client.navigate("https://example.com")
+        assert ("error" in result or
+                "no active browser" in result.get("text", "").lower() or
+                "no browser session" in result.get("text", "").lower()), \
+               "Navigate should fail without browser"
 
-        for tool_name, args in operations:
-            result = await mcp_client.call_tool(tool_name, args)
-            assert ("error" in result or
-                    "no active browser" in result.get("text", "").lower() or
-                    "no browser session" in result.get("text", "").lower()), \
-                   f"Tool {tool_name} should fail without browser"
+        # Test find_element
+        result = await mcp_client.find_element("id", "test", timeout=1)
+        assert ("error" in result or
+                "no active browser" in result.get("text", "").lower() or
+                "no browser session" in result.get("text", "").lower()), \
+               "Find element should fail without browser"
+
+        # Test click_element
+        result = await mcp_client.click_element("id", "test", timeout=1)
+        assert ("error" in result or
+                "no active browser" in result.get("text", "").lower() or
+                "no browser session" in result.get("text", "").lower()), \
+               "Click element should fail without browser"
 
     @pytest.mark.asyncio
     async def test_nonexistent_element_handling(self, browser: MCPSeleniumClient, test_server):
@@ -132,12 +126,7 @@ class TestCoreFunctionality:
         url = f"{test_server.base_url}/upload_page.html"
         await browser.navigate(url)
 
-        result = await browser.call_tool("upload_file", {
-            "by": "id",
-            "value": "file-input",
-            "filePath": str(sample_file),
-            "timeout": 10000
-        })
+        result = await browser.upload_file("id", "file-input", str(sample_file), timeout=10)
 
         # Should either work or give meaningful error
         assert isinstance(result, dict)

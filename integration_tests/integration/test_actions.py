@@ -17,19 +17,12 @@ class TestMouseKeyboardActions:
             pytest.skip("hover tool not available in this implementation")
 
         # Hover over the hover test element
-        result = await browser.call_tool("hover", {
-            "by": "id",
-            "value": "hover-test",
-            "timeout": 10000
-        })
+        result = await browser.hover("id", "hover-test", timeout=10)
 
         assert "error" not in result
 
         # Verify hover action was detected by checking the result log
-        log_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "result-log"
-        })
+        log_result = await browser.get_element_text("id", "result-log")
 
         assert "error" not in log_result
         log_text = log_result.get("text", "").lower()
@@ -46,19 +39,12 @@ class TestMouseKeyboardActions:
             pytest.skip("double_click tool not available in this implementation")
 
         # Double click the double click test element
-        result = await browser.call_tool("double_click", {
-            "by": "id",
-            "value": "double-click-test",
-            "timeout": 10000
-        })
+        result = await browser.double_click("id", "double-click-test", timeout=10)
 
         assert "error" not in result
 
         # Verify double click action was detected
-        log_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "result-log"
-        })
+        log_result = await browser.get_element_text("id", "result-log")
 
         assert "error" not in log_result
         log_text = log_result.get("text", "").lower()
@@ -75,19 +61,12 @@ class TestMouseKeyboardActions:
             pytest.skip("right_click tool not available in this implementation")
 
         # Right click the right click test element
-        result = await browser.call_tool("right_click", {
-            "by": "id",
-            "value": "right-click-test",
-            "timeout": 10000
-        })
+        result = await browser.right_click("id", "right-click-test", timeout=10)
 
         assert "error" not in result
 
         # Verify right click action was detected
-        log_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "result-log"
-        })
+        log_result = await browser.get_element_text("id", "result-log")
 
         assert "error" not in log_result
         log_text = log_result.get("text", "").lower()
@@ -100,19 +79,14 @@ class TestMouseKeyboardActions:
         await browser.navigate(url)
 
         # Click on the body to ensure focus (body has tabindex="0")
-        await browser.call_tool("click_element", {
-            "by": "tag",
-            "value": "body"
-        })
+        await browser.click_element("tag", "body")
 
         tools = await browser.list_tools()
         if "press_key" not in tools:
             pytest.skip("press_key tool not available in this implementation")
 
         # Test pressing Enter key
-        result = await browser.call_tool("press_key", {
-            "key": "Enter"
-        })
+        result = await browser.press_key("Enter")
 
         assert "error" not in result
 
@@ -121,10 +95,7 @@ class TestMouseKeyboardActions:
         await asyncio.sleep(0.1)
 
         # Verify key press was detected
-        log_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "result-log"
-        })
+        log_result = await browser.get_element_text("id", "result-log")
 
         assert "error" not in log_result
         log_text = log_result.get("text", "").lower()
@@ -137,19 +108,14 @@ class TestMouseKeyboardActions:
         await browser.navigate(url)
 
         # Click on the body to ensure focus (body has tabindex="0")
-        await browser.call_tool("click_element", {
-            "by": "tag",
-            "value": "body"
-        })
+        await browser.click_element("tag", "body")
 
         tools = await browser.list_tools()
         if "press_key" not in tools:
             pytest.skip("press_key tool not available in this implementation")
 
         # Test pressing Tab key
-        result = await browser.call_tool("press_key", {
-            "key": "Tab"
-        })
+        result = await browser.press_key("Tab")
 
         assert "error" not in result
 
@@ -158,10 +124,7 @@ class TestMouseKeyboardActions:
         await asyncio.sleep(0.1)
 
         # Verify tab key press was detected
-        log_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "result-log"
-        })
+        log_result = await browser.get_element_text("id", "result-log")
 
         assert "error" not in log_result
         log_text = log_result.get("text", "").lower()
@@ -178,13 +141,7 @@ class TestMouseKeyboardActions:
             pytest.skip("drag_and_drop tool not available in this implementation")
 
         # Drag from source to drop zone
-        result = await browser.call_tool("drag_and_drop", {
-            "by": "id",
-            "value": "drag-source",
-            "targetBy": "id",
-            "targetValue": "drop-zone",
-            "timeout": 10000
-        })
+        result = await browser.drag_and_drop("id", "drag-source", "id", "drop-zone", timeout=10)
 
         assert "error" not in result
 
@@ -193,10 +150,7 @@ class TestMouseKeyboardActions:
         await asyncio.sleep(0.2)
 
         # Verify drag and drop actions were detected
-        log_result = await browser.call_tool("get_element_text", {
-            "by": "id",
-            "value": "result-log"
-        })
+        log_result = await browser.get_element_text("id", "result-log")
 
         assert "error" not in log_result
         log_text = log_result.get("text", "").lower()
@@ -217,11 +171,7 @@ class TestMouseKeyboardActions:
         tools = await browser.list_tools()
 
         if "hover" in tools:
-            result = await browser.call_tool("hover", {
-                "by": "id",
-                "value": "nonexistent-element",
-                "timeout": 1000  # Short timeout to fail quickly
-            })
+            result = await browser.hover("id", "nonexistent-element", timeout=1)
             assert ("error" in result or
                     "not found" in result.get("text", "").lower() or
                     "element not found" in result.get("text", "").lower() or
@@ -233,20 +183,38 @@ class TestMouseKeyboardActions:
         """Test actions without starting browser"""
         tools = await mcp_client.list_tools()
 
-        test_actions = []
+        # Test hover action
         if "hover" in tools:
-            test_actions.append(("hover", {"by": "id", "value": "test", "timeout": 1000}))
-        if "double_click" in tools:
-            test_actions.append(("double_click", {"by": "id", "value": "test", "timeout": 1000}))
-        if "right_click" in tools:
-            test_actions.append(("right_click", {"by": "id", "value": "test", "timeout": 1000}))
-        if "press_key" in tools:
-            test_actions.append(("press_key", {"key": "Enter"}))
-
-        for action_name, args in test_actions:
-            result = await mcp_client.call_tool(action_name, args)
+            result = await mcp_client.hover("id", "test", timeout=1)
             assert ("error" in result or
                     "no browser" in result.get("text", "").lower() or
                     "no active browser" in result.get("text", "").lower() or
                     "session not found" in result.get("text", "").lower()), \
-                   f"Action {action_name} should fail without browser"
+                   "Hover action should fail without browser"
+
+        # Test double_click action
+        if "double_click" in tools:
+            result = await mcp_client.double_click("id", "test", timeout=1)
+            assert ("error" in result or
+                    "no browser" in result.get("text", "").lower() or
+                    "no active browser" in result.get("text", "").lower() or
+                    "session not found" in result.get("text", "").lower()), \
+                   "Double click action should fail without browser"
+
+        # Test right_click action
+        if "right_click" in tools:
+            result = await mcp_client.right_click("id", "test", timeout=1)
+            assert ("error" in result or
+                    "no browser" in result.get("text", "").lower() or
+                    "no active browser" in result.get("text", "").lower() or
+                    "session not found" in result.get("text", "").lower()), \
+                   "Right click action should fail without browser"
+
+        # Test press_key action
+        if "press_key" in tools:
+            result = await mcp_client.press_key("Enter")
+            assert ("error" in result or
+                    "no browser" in result.get("text", "").lower() or
+                    "no active browser" in result.get("text", "").lower() or
+                    "session not found" in result.get("text", "").lower()), \
+                   "Press key action should fail without browser"

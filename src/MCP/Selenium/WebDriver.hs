@@ -37,7 +37,6 @@ where
 
 import Control.Exception (Exception)
 import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
-import Data.Aeson.KeyMap (fromList)
 import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS

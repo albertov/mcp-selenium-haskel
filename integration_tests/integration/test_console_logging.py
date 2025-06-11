@@ -25,7 +25,7 @@ class TestConsoleLogging:
         time.sleep(2)
 
         # Get console logs
-        logs_result = await browser.call_tool("get_console_logs", {})
+        logs_result = await browser.get_console_logs()
 
         logger.info(f"Console logs result: {logs_result}")
         assert "error" not in logs_result
@@ -66,7 +66,7 @@ class TestConsoleLogging:
         await browser.navigate(url)
 
         # Inject console logger
-        inject_result = await browser.call_tool("inject_console_logger", {})
+        inject_result = await browser.inject_console_logger()
 
         logger.info(f"Inject console logger result: {inject_result}")
         assert "error" not in inject_result
@@ -83,9 +83,7 @@ class TestConsoleLogging:
         time.sleep(1)
 
         # Get injected console logs
-        injected_logs_result = await browser.call_tool("get_injected_console_logs", {
-            "clear": False
-        })
+        injected_logs_result = await browser.get_injected_console_logs(clear=False)
 
         logger.info(f"Injected logs result: {injected_logs_result}")
         assert "error" not in injected_logs_result
@@ -121,7 +119,7 @@ class TestConsoleLogging:
         """Test getting available log types"""
 
         # Get available log types
-        log_types_result = await browser.call_tool("get_available_log_types", {})
+        log_types_result = await browser.get_available_log_types()
 
         logger.info(f"Available log types result: {log_types_result}")
         assert "error" not in log_types_result
@@ -165,10 +163,7 @@ class TestConsoleLogging:
         time.sleep(2)
 
         # Get console logs with level filter
-        logs_result = await browser.call_tool("get_console_logs", {
-            "logLevel": "SEVERE",
-            "maxEntries": 5
-        })
+        logs_result = await browser.get_console_logs(log_level="SEVERE", max_entries=5)
 
         logger.info(f"Filtered console logs result: {logs_result}")
         assert "error" not in logs_result
@@ -193,9 +188,7 @@ class TestConsoleLogging:
         await browser.navigate(url)
 
         # Inject console logger with custom timeout (30 seconds)
-        inject_result = await browser.call_tool("inject_console_logger", {
-            "timeout": 30000
-        })
+        inject_result = await browser.inject_console_logger(timeout=30000)
 
         logger.info(f"Inject console logger with timeout result: {inject_result}")
         assert "error" not in inject_result
@@ -205,9 +198,7 @@ class TestConsoleLogging:
         time.sleep(2)
 
         # Get injected console logs to verify it's working
-        injected_logs_result = await browser.call_tool("get_injected_console_logs", {
-            "clear": False
-        })
+        injected_logs_result = await browser.get_injected_console_logs(clear=False)
 
         logger.info(f"Injected logs with custom timeout result: {injected_logs_result}")
         assert "error" not in injected_logs_result
