@@ -44,7 +44,7 @@ The following WebDriver commands are available in `Test.WebDriver.Commands` but 
 - [ ] **Frame/window switching**: Switch between frames, tabs, and windows
 - [ ] **Element selection**: Select options in dropdown elements
 
-**Integration tests should be implemented for all new tools with appropriate HTML fixtures to verify functionality**
+**Integration tests should be implemented for all new tools with appropriate HTML fixtures to verify functionality. The Tool documentation and JSON schema definitions should be kept up to date too**
 
 ### Error Handling and Validation
 - [ ] **Implement specific error types**: Replace generic `SomeException` with domain-specific error types
