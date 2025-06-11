@@ -490,10 +490,6 @@ takeScreenshotTool =
           "session_id": {
             "type": "string",
             "description": "Session ID returned from start_browser"
-          },
-          "outputPath": {
-            "type": "string",
-            "description": "Path where to save the screenshot. If not provided, returns base64 data."
           }
         },
         "required": ["session_id"]
