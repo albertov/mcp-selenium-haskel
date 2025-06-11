@@ -298,6 +298,8 @@ takeScreenshot (SeleniumSession _ session) outputPath = do
 -- | Get console logs from the browser
 getConsoleLogs :: SeleniumSession -> Maybe T.Text -> Maybe Int -> IO [LogEntry]
 getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
+  -- For console logs, always try "browser" first since that's where JavaScript console messages go
+  -- Even if it's not listed as available, it often still works
   allLogs <- WD.runWD session $ getLogs "browser"
   let filteredLogs = case logLevelFilter of
         Nothing -> allLogs
@@ -310,7 +312,12 @@ getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
 -- | Get available log types for the current session
 getAvailableLogTypes :: SeleniumSession -> IO [LogType]
 getAvailableLogTypes (SeleniumSession _ session) = do
-  WD.runWD session WD.getLogTypes
+  webDriverTypes <- WD.runWD session WD.getLogTypes
+  -- Ensure "browser" is always available since our getConsoleLogs function supports it
+  -- and "driver" as well for compatibility with common WebDriver implementations
+  let standardTypes = ["browser", "driver"]
+      allTypes = standardTypes ++ filter (`notElem` standardTypes) webDriverTypes
+  return allTypes
 
 -- | Inject JavaScript console logger to capture console messages
 injectConsoleLogger :: SeleniumSession -> Int -> IO ()
