@@ -53,7 +53,6 @@ class TestGetSource:
         # First get initial source
         initial_result = await browser.get_source()
         assert "error" not in initial_result
-        initial_source = initial_result["text"]
 
         # Try to interact with an element if it exists
         find_result = await browser.find_element("tag", "body")
