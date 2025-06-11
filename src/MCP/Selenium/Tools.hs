@@ -144,6 +144,8 @@ data UploadFileParams = UploadFileParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+-- FIXME: Remove the outputPath parameter from this
+-- too
 newtype TakeScreenshotParams = TakeScreenshotParams
   { outputPath :: Maybe T.Text
   }
