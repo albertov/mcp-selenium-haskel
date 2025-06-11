@@ -51,6 +51,7 @@ library
   exposed-modules:
     MCP.Selenium.Server
     MCP.Selenium.Tools
+    MCP.Selenium.Utils
     MCP.Selenium.WebDriver
 
   hs-source-dirs: src

@@ -16,23 +16,17 @@ import Data.Aeson.Types (parseMaybe)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import MCP.Selenium.Tools
+import MCP.Selenium.Utils (debugLog)
 import Network.MCP.Server (Server, createServer, registerToolCallHandler, registerTools)
 import Network.MCP.Server.StdIO (runServerWithSTDIO)
 import Network.MCP.Server.Types (ToolCallHandler)
 import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Implementation (..), ServerCapabilities (..), Tool (..), ToolContent (..), ToolContentType (..), ToolsCapability (..))
-import System.IO (hFlush, hPutStrLn, stderr)
-
--- | Debug logging helper
-debugLog :: String -> IO ()
-debugLog msg = do
-  hPutStrLn stderr $ "SERVER_DEBUG: " ++ msg
-  hFlush stderr
 
 -- | Create a complete Selenium MCP server with all tools
 createSeleniumServer :: IO Server
 createSeleniumServer = do
   tools <- createSeleniumTools
-  debugLog "Created SeleniumTools instance"
+  debugLog "SERVER_DEBUG: Created SeleniumTools instance"
 
   let serverInfo = Implementation "mcp-selenium-haskell" "1.0.0"
       serverCapabilities =
@@ -71,7 +65,7 @@ createSeleniumServer = do
 
   -- Create handler with the same tools instance
   let handler = createHandler tools
-  debugLog "Created handler with tools instance"
+  debugLog "SERVER_DEBUG: Created handler with tools instance"
   registerToolCallHandler server handler
 
   return server
@@ -79,7 +73,7 @@ createSeleniumServer = do
 -- | Generic handler that routes tool calls to appropriate handlers
 createHandler :: SeleniumTools -> ToolCallHandler
 createHandler tools request = do
-  debugLog $ "Handler called for tool: " ++ T.unpack (callToolName request)
+  debugLog $ "SERVER_DEBUG: Handler called for tool: " ++ T.unpack (callToolName request)
   case callToolName request of
     "start_browser" -> parseAndHandle handleStartBrowser
     "navigate" -> parseAndHandle handleNavigate
@@ -104,13 +98,13 @@ createHandler tools request = do
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
     parseAndHandle handler = do
       let args = object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))
-      debugLog $ "Parsing arguments: " ++ show args
+      debugLog $ "SERVER_DEBUG: Parsing arguments: " ++ show args
       case parseMaybe parseJSON args of
         Nothing -> do
-          debugLog "Failed to parse parameters"
+          debugLog "SERVER_DEBUG: Failed to parse parameters"
           return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
         Just params -> do
-          debugLog "Successfully parsed parameters, calling handler"
+          debugLog "SERVER_DEBUG: Successfully parsed parameters, calling handler"
           handler tools params
 
 -- | Tool definitions

@@ -17,9 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server implementation for browser automation
 - Comprehensive integration test suite with 25+ tests
 - Modern Python packaging with pyproject.toml and hatchling
+- Configurable timeout parameter for `inject_console_logger` tool (default: 60000ms)
+- Additional integration test demonstrating custom timeout configuration
+- Increased HTTP retry count for improved reliability in CI environments
 
 ### Fixed
 - Removed unused outputPath parameter from TakeScreenshotParams
+- Python dependency management in flake.nix by migrating integration tests to writeShellApplication with proper pythonEnv
+- HTML fixtures directory path to work in both development and packaged environments
+- Import issues by creating proper Python package structure
+- Integration test orchestration to use correct paths
+- Console logger injection timeout issues in CI environments by adding configurable script timeout parameter
 
 ### Changed
 - **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory
@@ -30,17 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Converted to modern `format = "pyproject"` with `hatchling` build backend
 - Updated integration test scripts to work with new directory structure
 
-### Fixed
-- Python dependency management in flake.nix by migrating integration tests to writeShellApplication with proper pythonEnv
-- HTML fixtures directory path to work in both development and packaged environments
-- Import issues by creating proper Python package structure
-- Integration test orchestration to use correct paths
-- Console logger injection timeout issues in CI environments by adding configurable script timeout parameter
-
-### Added
-- Configurable timeout parameter for `inject_console_logger` tool (default: 60000ms)
-- Additional integration test demonstrating custom timeout configuration
-- Increased HTTP retry count for improved reliability in CI environments
+### Refactored
+- Abstracted stderr logging pattern `hPutStrLn stderr "..." >> hFlush stderr` into shared utility function
+- Created new `MCP.Selenium.Utils` module with `debugLog` helper function
+- Updated all modules to use shared logging utility for improved maintainability
+- Removed code duplication across Server and Tools modules
 
 ### Technical Details
 - Replaced custom shell scripts with proper Python console script entry points
