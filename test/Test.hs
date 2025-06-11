@@ -108,11 +108,11 @@ main = hspec $ do
 
     describe "TakeScreenshotParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = TakeScreenshotParams (Just "/tmp/screenshot.png")
+        let params = TakeScreenshotParams
         decode (encode params) `shouldBe` Just params
 
-      it "handles optional output path" $ do
-        let params = TakeScreenshotParams Nothing
+      it "handles constructor without arguments" $ do
+        let params = TakeScreenshotParams
         decode (encode params) `shouldBe` Just params
 
     describe "CloseSessionParams" $ do
