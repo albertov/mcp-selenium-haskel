@@ -23,8 +23,8 @@ rec {
     with pkgs.buildPackages;
     with python3.pkgs;
     [
-      #selenium-server-standalone
-      #chromium
+      selenium-server-standalone
+      chromium
       python
       pytest
       pytest-asyncio

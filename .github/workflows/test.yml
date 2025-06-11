@@ -14,6 +14,14 @@ jobs:
       uses: cachix/install-nix-action@v31
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Debug Cachix setup
+      run: |
+	echo "Token length: ${#CACHIX_AUTH_TOKEN}"
+	echo "Token starts with: ${CACHIX_AUTH_TOKEN:0:4}..."
+	cachix authtoken "$CACHIX_AUTH_TOKEN"
+	cachix use mcp-selenium-haskell
+      env:
+	CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_TOKEN }}
     - name: Setup Cachix cache
       uses: cachix/cachix-action@v14
       with:
