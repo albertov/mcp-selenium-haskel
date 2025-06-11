@@ -30,8 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Increased HTTP retry count for improved reliability in CI environments
 - Function-scoped browser fixture in `conftest.py` for automated session management in integration tests
 - `close_browser` method to MCPSeleniumClient for proper session cleanup
-
-### Fixed
 - Fixed `close_browser` parameter parsing issue by completing the rename from `close_session` to `close_browser` across all components
 - Removed unused outputPath parameter from TakeScreenshotParams
 - Python dependency management in flake.nix by migrating integration tests to writeShellApplication with proper pythonEnv

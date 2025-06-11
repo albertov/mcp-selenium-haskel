@@ -186,17 +186,16 @@
             echo "📄 Copying documentation files..."
             cp README.md "$STAGE_DIR/"
             cp CHANGELOG.md "$STAGE_DIR/"
-            cp LICENSE "$STAGE_DIR/LICENSE.md"
+            cp LICENSE "$STAGE_DIR/LICENSE"
             cp TODO.md "$STAGE_DIR/"
             cp CONTRIBUTORS.md "$STAGE_DIR/"
 
             # Create tarball with maximum compression
             echo "🗜️ Creating compressed tarball..."
-            cd "$TEMP_DIR"
-            tar -cf - "mcp-selenium-hs-$VERSION" | xz -9e > "$(pwd)/mcp-selenium-hs.$VERSION.tar.xz"
-
+            tar -C "$TEMP_DIR" -cf - "mcp-selenium-hs-$VERSION" \
+              | xz -9e > "$TEMP_DIR/mcp-selenium-hs.$VERSION.tar.xz"
             # Move to current directory
-            mv "mcp-selenium-hs.$VERSION.tar.xz" "$(pwd)"
+            mv "$TEMP_DIR/mcp-selenium-hs.$VERSION.tar.xz" "$(pwd)"
             echo "✅ Created mcp-selenium-hs.$VERSION.tar.xz"
             echo "📊 Size: $(du -h "mcp-selenium-hs.$VERSION.tar.xz" | cut -f1)"
           '';

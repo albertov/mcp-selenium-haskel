@@ -8,6 +8,8 @@ This project is made possible by the following contributors:
 
 ## Contributors
 
+- [codemcp][https://github.com/ezyang/codemcp]
+- [claude.ai][https://claude.ai]
 <!-- Add contributors here as they contribute to the project -->
 
 ## Acknowledgments
