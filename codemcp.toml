@@ -97,6 +97,10 @@ set of packages.
 command = ["hlint"]
 doc = "Run hlint on the file passed as argument to report errors"
 
+[commands.branch_changes]
+command = ["./run_branch_changes.sh"]
+doc = "List the changes in this branch"
+
 [commands.changed_files]
 command = ["git", "diff", "--name-only", "origin/main...HEAD"]
 doc = "List the file names that have been changed in this branch"
