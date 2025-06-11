@@ -12,7 +12,7 @@ class TestCoreFunctionality:
 
         core_tools = [
             "start_browser", "navigate", "find_element", "click_element",
-            "send_keys", "get_element_text", "take_screenshot"
+            "send_keys", "get_element_text", "take_screenshot", "get_source"
         ]
 
         for tool in core_tools:
@@ -144,4 +144,37 @@ class TestCoreFunctionality:
 
     # NOTE: Session cleanup test removed due to close_session parameter parsing bug
     # The Haskell server fails to parse empty parameters for close_session
+
+    @pytest.mark.asyncio
+    async def test_get_source_basic_functionality(self, browser: MCPSeleniumClient, test_server):
+        """Test basic get_source functionality"""
+        url = f"{test_server.base_url}/test_page.html"
+        await browser.navigate(url)
+
+        result = await browser.get_source()
+
+        assert "error" not in result
+        assert "text" in result
+
+        source = result["text"]
+        assert isinstance(source, str)
+        assert len(source) > 0
+
+        # Check for expected HTML elements
+        assert "<html>" in source or "<!DOCTYPE html>" in source
+        assert "<title>" in source
+        assert "<body>" in source
+
+    @pytest.mark.asyncio
+    async def test_get_source_without_browser_session(self):
+        """Test get_source without an active browser session"""
+        import os
+        executable_path = os.path.join(os.getcwd(), "dist-newstyle/build/x86_64-linux/ghc-9.10.2/mcp-selenium-0.1.0/x/mcp-selenium-hs/build/mcp-selenium-hs/mcp-selenium-hs")
+
+        async with MCPSeleniumClient(executable_path) as client:
+            result = await client.get_source()
+
+            # Should return error about no active session
+            assert "error" in result
+            assert "session" in result["error"].lower()
     # but doesn't return an error, making the test unreliable

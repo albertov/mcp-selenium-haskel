@@ -73,7 +73,8 @@ class MCPSeleniumClient:
             "navigate", "find_element", "click_element", "send_keys", "get_element_text",
             "hover", "drag_and_drop", "double_click", "right_click", "press_key",
             "upload_file", "take_screenshot", "close_session", "get_console_logs",
-            "get_available_log_types", "inject_console_logger", "get_injected_console_logs"
+            "get_available_log_types", "inject_console_logger", "get_injected_console_logs",
+            "get_source"
         }
 
         if tool_name in session_required_tools and "session_id" not in arguments:
@@ -150,6 +151,10 @@ class MCPSeleniumClient:
         if element_id:
             args["elementId"] = element_id
         return await self.call_tool("take_screenshot", args)
+
+    async def get_source(self) -> Dict[str, Any]:
+        """Get the current page's HTML source code"""
+        return await self.call_tool("get_source", {})
 
     async def close_browser(self) -> Dict[str, Any]:
         """Close the browser session"""

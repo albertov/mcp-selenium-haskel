@@ -68,7 +68,8 @@ createSeleniumServer = do
           getConsoleLogsTool,
           getAvailableLogTypesTool,
           injectConsoleLoggerTool,
-          getInjectedConsoleLogsTool
+          getInjectedConsoleLogsTool,
+          getSourceTool
         ]
 
   registerTools server allTools
@@ -103,6 +104,7 @@ createHandler tools request = do
     "get_available_log_types" -> parseAndHandle handleGetAvailableLogTypes
     "inject_console_logger" -> parseAndHandle handleInjectConsoleLogger
     "get_injected_console_logs" -> parseAndHandle handleGetInjectedConsoleLogs
+    "get_source" -> parseAndHandle handleGetSource
     _ -> return $ CallToolResult [ToolContent TextualContent (Just "Unknown tool")] True
   where
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
@@ -598,6 +600,24 @@ getInjectedConsoleLogsTool =
           "clear": {
             "type": "boolean",
             "description": "Clear the captured logs after retrieving them (default: false)"
+          }
+        },
+        "required": ["session_id"]
+      }|]
+    }
+
+getSourceTool :: Tool
+getSourceTool =
+  Tool
+    { toolName = "get_source",
+      toolDescription = Just "Gets the current page's HTML source code",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
           }
         },
         "required": ["session_id"]

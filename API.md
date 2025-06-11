@@ -364,18 +364,38 @@ Uploads a file using a file input element.
 Captures a screenshot of the current page.
 
 **Parameters:**
-- `outputPath` (optional): Path where to save the screenshot. If not provided, returns base64 data.
+- `session_id` (required): Session ID returned from start_browser
 
 **Example:**
 ```json
 {
-  "outputPath": "/tmp/screenshot.png"
+  "session_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
 **Response:**
 - Success: Screenshot path or base64 data
 - Error: Screenshot operation failure details
+
+---
+
+### get_source
+
+Gets the current page's HTML source code.
+
+**Parameters:**
+- `session_id` (required): Session ID returned from start_browser
+
+**Example:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Response:**
+- Success: The HTML source code of the current page
+- Error: Get source operation failure details
 
 ---
 
@@ -502,6 +522,7 @@ Common error scenarios:
 {
   "tool": "navigate",
   "arguments": {
+    "session_id": "550e8400-e29b-41d4-a716-446655440000",
     "url": "https://example.com/login"
   }
 }
@@ -510,6 +531,7 @@ Common error scenarios:
 {
   "tool": "send_keys",
   "arguments": {
+    "session_id": "550e8400-e29b-41d4-a716-446655440000",
     "by": "id",
     "value": "username",
     "text": "user@example.com"
@@ -520,20 +542,33 @@ Common error scenarios:
 {
   "tool": "click_element",
   "arguments": {
+    "session_id": "550e8400-e29b-41d4-a716-446655440000",
     "by": "css",
     "value": "button[type='submit']"
   }
 }
 
-// 5. Take screenshot
+// 5. Get page source
 {
-  "tool": "take_screenshot",
-  "arguments": {}
+  "tool": "get_source",
+  "arguments": {
+    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
 }
 
-// 6. Clean up
+// 6. Take screenshot
+{
+  "tool": "take_screenshot",
+  "arguments": {
+    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+
+// 7. Clean up
 {
   "tool": "close_session",
-  "arguments": {}
+  "arguments": {
+    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
 }
 ```

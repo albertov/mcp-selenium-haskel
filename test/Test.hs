@@ -5,7 +5,7 @@ module Main (main) where
 import Data.Aeson (decode, encode)
 import qualified Data.UUID as UUID
 import MCP.Selenium.Server
-import MCP.Selenium.Tools (ClickElementParams (..), CloseSessionParams (..), DoubleClickParams (..), DragAndDropParams (..), FindElementParams (..), GetAvailableLogTypesParams (..), GetConsoleLogsParams (..), GetElementTextParams (..), GetInjectedConsoleLogsParams (..), HoverParams (..), InjectConsoleLoggerParams (..), NavigateParams (..), PressKeyParams (..), RightClickParams (..), SendKeysParams (..), SessionId, StartBrowserParams (..), TakeScreenshotParams (..), UploadFileParams (..), createSeleniumTools)
+import MCP.Selenium.Tools (ClickElementParams (..), CloseSessionParams (..), DoubleClickParams (..), DragAndDropParams (..), FindElementParams (..), GetAvailableLogTypesParams (..), GetConsoleLogsParams (..), GetElementTextParams (..), GetInjectedConsoleLogsParams (..), GetSourceParams (..), HoverParams (..), InjectConsoleLoggerParams (..), NavigateParams (..), PressKeyParams (..), RightClickParams (..), SendKeysParams (..), SessionId, StartBrowserParams (..), TakeScreenshotParams (..), UploadFileParams (..), createSeleniumTools)
 import MCP.Selenium.WebDriver
 import SessionTest (sessionTests)
 import Test.Hspec
@@ -156,6 +156,11 @@ main = hspec $ do
 
       it "handles optional clear flag" $ do
         let params = GetInjectedConsoleLogsParams dummySessionId Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetSourceParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetSourceParams dummySessionId
         decode (encode params) `shouldBe` Just params
 
     describe "createSeleniumTools" $ do

@@ -31,6 +31,7 @@ module MCP.Selenium.WebDriver
     getAvailableLogTypes,
     injectConsoleLogger,
     getInjectedConsoleLogs,
+    getPageSource,
   )
 where
 
@@ -47,7 +48,7 @@ import qualified Data.Text.Read as TR
 import GHC.Generics (Generic)
 import System.Environment (lookupEnv)
 import qualified Test.WebDriver as WD
-import Test.WebDriver.Commands (LogEntry (..), LogLevel (..), LogType, executeJS, getLogs)
+import Test.WebDriver.Commands (LogEntry (..), LogLevel (..), LogType, executeJS, getLogs, getSource)
 import Test.WebDriver.Session (WDSession (..), getSession)
 import Text.RawString.QQ (r)
 
@@ -326,3 +327,8 @@ getInjectedConsoleLogs (SeleniumSession _ session) clearLogs = do
   case result of
     Just s -> return s
     Nothing -> return "[]"
+
+-- | Get the current page source
+getPageSource :: SeleniumSession -> IO T.Text
+getPageSource (SeleniumSession _ session) = do
+  WD.runWD session getSource

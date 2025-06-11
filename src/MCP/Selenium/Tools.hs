@@ -26,6 +26,7 @@ module MCP.Selenium.Tools
     GetAvailableLogTypesParams (..),
     InjectConsoleLoggerParams (..),
     GetInjectedConsoleLogsParams (..),
+    GetSourceParams (..),
     createSeleniumTools,
     generateSessionId,
     lookupSession,
@@ -49,6 +50,7 @@ module MCP.Selenium.Tools
     handleGetAvailableLogTypes,
     handleInjectConsoleLogger,
     handleGetInjectedConsoleLogs,
+    handleGetSource,
   )
 where
 
@@ -211,6 +213,11 @@ data InjectConsoleLoggerParams = InjectConsoleLoggerParams
 data GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
   { session_id :: SessionId,
     clear :: Maybe Bool
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+newtype GetSourceParams = GetSourceParams
+  { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -621,6 +628,28 @@ handleGetInjectedConsoleLogs tools (GetInjectedConsoleLogsParams sessionId clear
         ( \e -> do
             debugLog ("HANDLER: Exception in get_injected_console_logs: " ++ show (e :: SomeException))
             return $ errorResult $ "Get injected console logs failed: " <> T.pack (show (e :: SomeException))
+        )
+
+-- | Handle get_source tool
+handleGetSource :: SeleniumTools -> GetSourceParams -> IO CallToolResult
+handleGetSource tools (GetSourceParams sessionId) = do
+  debugLog "HANDLER: get_source called"
+  sessionMaybe <- lookupSession tools sessionId
+  case sessionMaybe of
+    Nothing -> do
+      debugLog "HANDLER: Session not found in get_source"
+      return $ errorResult "Session not found"
+    Just sessionData ->
+      catch
+        ( do
+            debugLog "HANDLER: Getting page source"
+            pageSource <- getPageSource (seleniumSession sessionData)
+            debugLog "HANDLER: Successfully retrieved page source"
+            return $ successResult pageSource
+        )
+        ( \e -> do
+            debugLog ("HANDLER: Exception in get_source: " ++ show (e :: SomeException))
+            return $ errorResult $ "Get page source failed: " <> T.pack (show (e :: SomeException))
         )
 
 -- | Create selenium tools instance

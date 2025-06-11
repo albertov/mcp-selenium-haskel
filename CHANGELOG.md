@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Browser session management with customizable options
 - Element interaction (click, send keys, hover, etc.)
 - Screenshot capabilities
+- Page source retrieval tool (`get_source`) to fetch HTML source code
 - MCP server implementation for browser automation
 - Comprehensive integration test suite with 25+ tests
 - Modern Python packaging with pyproject.toml and hatchling
