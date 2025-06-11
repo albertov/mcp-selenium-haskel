@@ -4,6 +4,7 @@ permissions:
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,6 +29,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        nix run .#release-tarball
         gh release create ${{ github.ref_name }} \
           --title "Release ${{ github.ref_name }}" \
           --notes "$(cat ./CHANGELOG.md)" \
