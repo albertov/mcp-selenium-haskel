@@ -1,5 +1,4 @@
 name: Build and Release
-needs: [test]
 permissions:
   contents: read
 on:
@@ -21,6 +20,10 @@ jobs:
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Build executable
       run: nix build --accept-flake-config
+    - name: Run checks
+      run: nix flake check
+    - name: Run integration tests
+      run: "nix run .#integration-tests"
     - name: Create Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
