@@ -1,5 +1,3 @@
-index-state: 2025-06-09T20:31:03Z
-
 write-ghc-environment-files: never
 packages:
   ./.
