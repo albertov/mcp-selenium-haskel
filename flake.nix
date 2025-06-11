@@ -172,6 +172,17 @@
         # for `nix flake check`
         checks = {
           formatting = treefmtEval.config.build.check self;
+          integration-tests = pkgs.runCommand "integration-tests-check" { } ''
+            echo "Running integration tests..."
+            if ${integration-tests}/bin/mcp-selenium-integration-tests > "$out" 2>&1; then
+              echo "✅ Integration tests passed"
+              cat "$out"
+            else
+              echo "❌ Integration tests failed"
+              cat "$out"
+              exit 1
+            fi
+          '';
         };
       })
       // {
