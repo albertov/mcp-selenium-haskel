@@ -6,3 +6,6 @@ __pycache__
 *.pyc
 *.pyo
 dev-profile*
+# We git ignore this so codecmp doesn't choke on it
+# the updateMaterialized script updates it
+nix/materialized

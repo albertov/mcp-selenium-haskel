@@ -126,7 +126,7 @@
 
             # Step 5: Test that it works
             echo "🧪 Testing materialization..."
-            git add nix/materialized
+            git add -f nix/materialized
             if nix flake check; then
               echo "✅ Flake check passed"
               # Step 6: Commit the materialized files
