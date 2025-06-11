@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `close_browser` method to MCPSeleniumClient for proper session cleanup
 
 ### Fixed
+- Fixed `close_browser` parameter parsing issue by completing the rename from `close_session` to `close_browser` across all components
 - Removed unused outputPath parameter from TakeScreenshotParams
 - Python dependency management in flake.nix by migrating integration tests to writeShellApplication with proper pythonEnv
 - HTML fixtures directory path to work in both development and packaged environments
