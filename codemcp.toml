@@ -1,5 +1,7 @@
 # codemcp configuration file
 project_prompt = """
+You MUST always obey the following rules:
+
 You MUST always run the 'lint' tool on every Haskell file you modify and fix ALL the warnings
 and errors it reports.
 
