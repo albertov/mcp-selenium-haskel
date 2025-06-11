@@ -19,6 +19,10 @@ This implementation is inspired by the [mcp-selenium project developed by Angie 
 - Support for Chrome and Firefox browsers
 - Statically linked executable, so it's relatively small and works anywhere.
 
+## API Documentation
+
+For comprehensive documentation of all available tools and their parameters, see [API.md](API.md).
+
 ## Building
 
 ```bash
