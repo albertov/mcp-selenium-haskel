@@ -4,6 +4,6 @@
 # IMPORTANT: Do not change the timeout!
 set -eu -o pipefail
 cabal build
-NEWPYTHONPATH="$(pwd)/tests:$PYTHONPATH"
+NEWPYTHONPATH="$(pwd)/integration_tests:$PYTHONPATH"
 export PYTHONPATH="${NEWPYTHONPATH}"
-exec timeout 60s python3 orchestrate_integration_tests.py
+exec timeout 60s python3 integration_tests/orchestrate_integration_tests.py

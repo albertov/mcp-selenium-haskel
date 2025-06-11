@@ -87,13 +87,58 @@ class ServiceManager:
         print("Running integration tests...")
 
         try:
-            # Run pytest on the integration tests
-            cmd = [
-                "python", "-m", "pytest",
-                "tests/integration/",
-                "-v",
-                "--tb=short"
-            ]
+            # Find the installed tests directory
+            import os
+            import sys
+
+            print(f"Current working directory: {os.getcwd()}")
+            print(f"Python path: {sys.path[:3]}...")  # Show first 3 entries
+
+            # Look for tests in the Python site-packages
+            tests_found = False
+            for path in sys.path:
+                tests_path = os.path.join(path, "integration_tests", "integration")
+                utils_path = os.path.join(path, "integration_tests", "utils")
+                if os.path.exists(tests_path) and os.path.exists(utils_path):
+                    print(f"Found tests at: {tests_path}")
+                    print(f"Found utils at: {utils_path}")
+                    # Change to the parent directory so relative imports work
+                    parent_dir = os.path.join(path, "integration_tests")
+                    os.chdir(parent_dir)
+                    print(f"Changed working directory to: {os.getcwd()}")
+
+                    # Add integration_tests directory to Python path for imports
+                    if parent_dir not in sys.path:
+                        sys.path.insert(0, parent_dir)
+
+                    cmd = [
+                        "python", "-m", "pytest",
+                        "integration/",
+                        "-v",
+                        "--tb=short"
+                    ]
+                    tests_found = True
+                    break
+
+            if not tests_found:
+                print("Tests not found in site-packages, trying current directory...")
+                # Fallback to current directory structure
+                if os.path.exists("integration_tests/integration"):
+                    os.chdir("integration_tests")
+                    cmd = [
+                        "python", "-m", "pytest",
+                        "integration/",
+                        "-v",
+                        "--tb=short"
+                    ]
+                else:
+                    # Legacy fallback
+                    cmd = [
+                        "python", "-m", "pytest",
+                        "tests/integration/",
+                        "-v",
+                        "--tb=short"
+                    ]
 
             result = subprocess.run(cmd)
             return result.returncode
