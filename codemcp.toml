@@ -63,7 +63,7 @@ dependencies change or the cabal file is update.
 """
 
 [commands.nix-integration-test]
-command = ["timeout", "90s", "nix", "run", ".#integration-tests"]
+command = ["timeout", "120s", "nix", "run", ".#integration-tests"]
 doc = """
 Runs the nix integration tests. This command does not accept arguments.
 

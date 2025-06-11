@@ -156,6 +156,51 @@
             echo "during evaluation."
           '';
         };
+
+        release-tarball = pkgs.writeShellApplication {
+          name = "create-release-tarball";
+          runtimeInputs = with pkgs; [
+            xz
+            gnutar
+            gawk
+          ];
+          text = ''
+            set -euo pipefail
+
+            # Extract version from cabal file
+            VERSION=$(awk '/^version:/ {print $2}' mcp-selenium.cabal)
+            echo "📦 Creating release tarball for version $VERSION..."
+
+            # Create temporary directory for staging
+            TEMP_DIR="$(mktemp -d)"
+            trap 'rm -rf "$TEMP_DIR"' EXIT
+
+            STAGE_DIR="$TEMP_DIR/mcp-selenium-hs-$VERSION"
+            mkdir -p "$STAGE_DIR"
+
+            # Copy the executable
+            echo "📁 Copying executable..."
+            cp ${self.packages.${system}.mcp-selenium-hs}/bin/mcp-selenium-hs "$STAGE_DIR/"
+
+            # Copy documentation files
+            echo "📄 Copying documentation files..."
+            cp README.md "$STAGE_DIR/"
+            cp CHANGELOG.md "$STAGE_DIR/"
+            cp LICENSE "$STAGE_DIR/LICENSE.md"
+            cp TODO.md "$STAGE_DIR/"
+            cp CONTRIBUTORS.md "$STAGE_DIR/"
+
+            # Create tarball with maximum compression
+            echo "🗜️ Creating compressed tarball..."
+            cd "$TEMP_DIR"
+            tar -cf - "mcp-selenium-hs-$VERSION" | xz -9e > "$(pwd)/mcp-selenium-hs.$VERSION.tar.xz"
+
+            # Move to current directory
+            mv "mcp-selenium-hs.$VERSION.tar.xz" "$(pwd)"
+            echo "✅ Created mcp-selenium-hs.$VERSION.tar.xz"
+            echo "📊 Size: $(du -h "mcp-selenium-hs.$VERSION.tar.xz" | cut -f1)"
+          '';
+        };
       in
       (pkgs.lib.recursiveUpdate flake {
         legacyPackages = pkgs;
@@ -165,6 +210,7 @@
           inherit (pkgs.hixProject.projectCross.musl64.hsPkgs.mcp-selenium.components.exes) mcp-selenium-hs;
           inherit integration-tests;
           inherit updateMaterialization;
+          inherit release-tarball;
         };
 
         formatter = treefmtEval.config.build.wrapper;

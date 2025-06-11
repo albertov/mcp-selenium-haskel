@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server implementation for browser automation
 - Comprehensive integration test suite with 25+ tests
 - Modern Python packaging with pyproject.toml and hatchling
+- Release tarball generation script (`release-tarball`) that automatically creates compressed archives with executable and documentation files
+- CONTRIBUTORS.md file to track project contributors
 
 ### Fixed
 - Fixed Chrome logging configuration to properly enable browser logging capabilities
