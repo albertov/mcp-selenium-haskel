@@ -6,6 +6,7 @@
   projectRootFile = "flake.nix";
   programs.nixfmt.enable = true;
   programs.ormolu.enable = true;
+  programs.hlint.enable = true;
   programs.shellcheck.enable = true;
   programs.deadnix.enable = true;
   programs.ruff.enable = true;
