@@ -311,13 +311,7 @@ getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
 
 -- | Get available log types for the current session
 getAvailableLogTypes :: SeleniumSession -> IO [LogType]
-getAvailableLogTypes (SeleniumSession _ session) = do
-  webDriverTypes <- WD.runWD session WD.getLogTypes
-  -- Ensure "browser" is always available since our getConsoleLogs function supports it
-  -- and "driver" as well for compatibility with common WebDriver implementations
-  let standardTypes = ["browser", "driver"]
-      allTypes = standardTypes ++ filter (`notElem` standardTypes) webDriverTypes
-  return allTypes
+getAvailableLogTypes (SeleniumSession _ session) = WD.runWD session WD.getLogTypes
 
 -- | Inject JavaScript console logger to capture console messages
 injectConsoleLogger :: SeleniumSession -> Int -> IO ()

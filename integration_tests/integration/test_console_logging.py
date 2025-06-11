@@ -137,7 +137,7 @@ class TestConsoleLogging:
             # Common log types that should be available
             expected_types = ["browser", "driver"]
             for expected_type in expected_types:
-                assert expected_type in log_types, f"Expected '{expected_type}' to be in available log types"
+                assert expected_type in log_types, f"Expected '{expected_type}' to be in available log types: {log_types}"
 
         else:
             pytest.fail("No 'logTypes' field in log types result")

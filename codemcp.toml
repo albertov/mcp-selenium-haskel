@@ -30,16 +30,10 @@ When your work is almost ready, you MUST run the 'integration-test' command make
 everything still works. Fix it otherwise
 
 When your work is ready, you MUST:
- - Run a final exhaustive check with the 'nix-integration-test' command. ALL
-   tests MUST pass! We allow no flaky tests here
- - Run the 'changed_files' command to get a list of all the files
-   that have been modified in this branch and bump the version and update the
-   changelog of all packages that have been modified, not the ones that have been
-   newly created. Do not do this if the date of the latest entry of the changelog
-   is "UNRELEASED". In this case, update the latest entry but do not bump the
-   version. You must also scan for any `*.md` documents that may need an update to reflect
-   the changes done and update them.
-
+1) Run a final exhaustive check with the 'nix-integration-test' command. ALL tests MUST pass! We allow no flaky tests here
+2) Run the 'branch_diff' command to get a diff of all the files that have been
+modified in this branch and update their CHANGELOG.md and any other '*.md'
+documents to reflect the changes we've done if not mentioned.
 """
 
 [commands.check_flake]
