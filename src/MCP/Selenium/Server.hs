@@ -503,7 +503,14 @@ injectConsoleLoggerTool =
       toolDescription = Just "Injects a script to capture all console messages including console.log, console.warn, etc.",
       toolInputSchema =
         [aesonQQ|{
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "timeout": {
+            "type": "number",
+            "description": "Script execution timeout in milliseconds (default: 60000)",
+            "default": 60000
+          }
+        }
       }|]
     }
 

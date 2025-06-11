@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTML fixtures directory path to work in both development and packaged environments
 - Import issues by creating proper Python package structure
 - Integration test orchestration to use correct paths
+- Console logger injection timeout issues in CI environments by adding configurable script timeout parameter
+
+### Added
+- Configurable timeout parameter for `inject_console_logger` tool (default: 60000ms)
+- Additional integration test demonstrating custom timeout configuration
+- Increased HTTP retry count for improved reliability in CI environments
 
 ### Technical Details
 - Replaced custom shell scripts with proper Python console script entry points

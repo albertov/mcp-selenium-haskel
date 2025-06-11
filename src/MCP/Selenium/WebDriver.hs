@@ -120,8 +120,9 @@ createWebDriverConfig browserType opts = do
       baseConfig = case browserType of
         Chrome -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.chrome}}
         Firefox -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.firefox}}
-      -- Increase HTTP response timeout to 120 seconds (120000000 microseconds)
-      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port, WD.wdHTTPRetryCount = 3, WD.wdResponseTimeout = 120000000}
+      -- Increase HTTP response timeout and retry count for CI environments
+      -- This is especially important for JavaScript execution calls like injectConsoleLogger
+      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port, WD.wdHTTPRetryCount = 5}
       chromeCapabilities :: WD.Capabilities
       chromeCapabilities =
         WD.defaultCaps
@@ -277,9 +278,11 @@ getAvailableLogTypes _ = do
   return ["browser", "driver", "performance", "server", "client"]
 
 -- | Inject JavaScript console logger to capture console messages
-injectConsoleLogger :: SeleniumSession -> IO ()
-injectConsoleLogger (SeleniumSession _ session) = do
+injectConsoleLogger :: SeleniumSession -> Int -> IO ()
+injectConsoleLogger (SeleniumSession _ session) timeoutMs = do
   WD.runWD session $ do
+    -- Set script timeout based on the provided parameter
+    WD.setScriptTimeout (fromIntegral timeoutMs)
     (_ :: Maybe ()) <-
       executeJS
         []

@@ -169,11 +169,10 @@ data GetAvailableLogTypesParams = GetAvailableLogTypesParams
 instance FromJSON GetAvailableLogTypesParams where
   parseJSON _ = pure GetAvailableLogTypesParams
 
-data InjectConsoleLoggerParams = InjectConsoleLoggerParams
-  deriving (Eq, Show, Generic, ToJSON)
-
-instance FromJSON InjectConsoleLoggerParams where
-  parseJSON _ = pure InjectConsoleLoggerParams
+newtype InjectConsoleLoggerParams = InjectConsoleLoggerParams
+  { timeout :: Maybe Int
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 newtype GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
   { clear :: Maybe Bool
@@ -527,7 +526,7 @@ handleGetAvailableLogTypes tools _ = do
 
 -- | Handle inject_console_logger tool
 handleInjectConsoleLogger :: SeleniumTools -> InjectConsoleLoggerParams -> IO CallToolResult
-handleInjectConsoleLogger tools _ = do
+handleInjectConsoleLogger tools (InjectConsoleLoggerParams timeoutVal) = do
   hPutStrLn stderr "HANDLER: inject_console_logger called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
@@ -538,7 +537,8 @@ handleInjectConsoleLogger tools _ = do
       catch
         ( do
             hPutStrLn stderr "HANDLER: Injecting console logger" >> hFlush stderr
-            injectConsoleLogger session
+            let timeoutMs = fromMaybe 60000 timeoutVal -- Default to 60 seconds
+            injectConsoleLogger session timeoutMs
             hPutStrLn stderr "HANDLER: Console logger injected successfully" >> hFlush stderr
             return $ successResult "Console logger injected successfully"
         )

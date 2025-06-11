@@ -217,3 +217,49 @@ class TestConsoleLogging:
 
         else:
             logger.info("No logs field in logs result, which may be expected if no SEVERE logs exist")
+
+    @pytest.mark.asyncio
+    async def test_inject_console_logger_with_custom_timeout(self, mcp_client: MCPSeleniumClient, test_server):
+        """Test injecting console logger with custom timeout parameter"""
+
+        # Start browser
+        await mcp_client.call_tool("start_browser", {
+            "browser": "chrome",
+            "options": {
+                "headless": True,
+                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
+            },
+            "enableLogging": True
+        })
+
+        # Navigate to the test page
+        url = f"{test_server.base_url}/test_page_with_js_error.html"
+        await mcp_client.navigate(url)
+
+        # Inject console logger with custom timeout (30 seconds)
+        inject_result = await mcp_client.call_tool("inject_console_logger", {
+            "timeout": 30000
+        })
+
+        logger.info(f"Inject console logger with timeout result: {inject_result}")
+        assert "error" not in inject_result
+        assert "injected successfully" in inject_result.get("text", "").lower()
+
+        # Wait for page JavaScript to execute
+        time.sleep(2)
+
+        # Get injected console logs to verify it's working
+        injected_logs_result = await mcp_client.call_tool("get_injected_console_logs", {
+            "clear": False
+        })
+
+        logger.info(f"Injected logs with custom timeout result: {injected_logs_result}")
+        assert "error" not in injected_logs_result
+
+        # The injected logs come back as a JSON array directly
+        if isinstance(injected_logs_result, list):
+            logs = injected_logs_result
+        else:
+            pytest.fail("Expected injected logs result to be a list")
+
+        logger.info(f"Found {len(logs)} injected log entries with custom timeout")

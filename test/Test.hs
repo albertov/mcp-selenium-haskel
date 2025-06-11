@@ -120,6 +120,38 @@ main = hspec $ do
         let params = CloseSessionParams
         decode (encode params) `shouldBe` Just params
 
+    describe "GetConsoleLogsParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetConsoleLogsParams (Just "SEVERE") (Just 10)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional fields" $ do
+        let params = GetConsoleLogsParams Nothing Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetAvailableLogTypesParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetAvailableLogTypesParams
+        decode (encode params) `shouldBe` Just params
+
+    describe "InjectConsoleLoggerParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = InjectConsoleLoggerParams (Just 30000)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional timeout" $ do
+        let params = InjectConsoleLoggerParams Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetInjectedConsoleLogsParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetInjectedConsoleLogsParams (Just True)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional clear flag" $ do
+        let params = GetInjectedConsoleLogsParams Nothing
+        decode (encode params) `shouldBe` Just params
+
     describe "createSeleniumTools" $ do
       it "creates tools instance without errors" $ do
         tools <- createSeleniumTools
