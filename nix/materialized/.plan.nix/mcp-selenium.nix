@@ -40,6 +40,8 @@
           (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
           (hsPkgs."base64-bytestring" or (errorHandler.buildDepError "base64-bytestring"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
+          (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
+          (hsPkgs."uuid" or (errorHandler.buildDepError "uuid"))
           (hsPkgs."webdriver" or (errorHandler.buildDepError "webdriver"))
           (hsPkgs."hs-mcp" or (errorHandler.buildDepError "hs-mcp"))
           (hsPkgs."stm" or (errorHandler.buildDepError "stm"))
@@ -49,6 +51,7 @@
         modules = [
           "MCP/Selenium/Server"
           "MCP/Selenium/Tools"
+          "MCP/Selenium/Utils"
           "MCP/Selenium/WebDriver"
         ];
         hsSourceDirs = [ "src" ];
@@ -71,8 +74,12 @@
             (hsPkgs."mcp-selenium" or (errorHandler.buildDepError "mcp-selenium"))
             (hsPkgs."hspec" or (errorHandler.buildDepError "hspec"))
             (hsPkgs."aeson" or (errorHandler.buildDepError "aeson"))
+            (hsPkgs."uuid" or (errorHandler.buildDepError "uuid"))
+            (hsPkgs."stm" or (errorHandler.buildDepError "stm"))
+            (hsPkgs."unordered-containers" or (errorHandler.buildDepError "unordered-containers"))
           ];
           buildable = true;
+          modules = [ "SessionTest" ];
           hsSourceDirs = [ "test" ];
           mainPath = [ "Test.hs" ];
         };
