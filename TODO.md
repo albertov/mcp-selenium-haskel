@@ -20,9 +20,9 @@ This document lists identified areas for improvement, missing features, incomple
   ```haskell
   -- In WebDriver.hs line 233: contextClick is not available, only moveToCenter
   ```
-- [ ] Add integration test to verify right-click functionality works. Should create a new html fixture with needed JS code to verify correctness
-- [ ] Add integration test to verify hover functinality worksa. Should create a new html fixture with needed JS code to verify correctness
-- [ ] Add integration test to verify drag and drop functionality works. Should create a new html fixture with needed JS code to verify correctness
+- [x] Add integration test to verify right-click functionality works. Should create a new html fixture with needed JS code to verify correctness
+- [x] Add integration test to verify hover functinality worksa. Should create a new html fixture with needed JS code to verify correctness
+- [x] Add integration test to verify drag and drop functionality works. Should create a new html fixture with needed JS code to verify correctness
 - [ ] **Implement actual log type detection**: `getAvailableLogTypes` returns hard-coded list instead of querying WebDriver
 - [ ] **Add missing browser arguments support**: Firefox browser options are not implemented (only Chrome has full options support)
 - [ ] **Implement element highlighting**: Add functionality to highlight elements before interaction for debugging
@@ -44,10 +44,10 @@ This document lists identified areas for improvement, missing features, incomple
 
 ### Disabled Integration Tests
 Multiple integration test files are disabled and need investigation:
-- [ ] **Re-enable `test_actions.py.disabled`**: Mouse and keyboard actions tests
+- [x] **Re-enable `test_actions.py.disabled`**: Mouse and keyboard actions tests
 - [ ] **Re-enable `test_advanced_elements.py.disabled`**: Advanced element interaction tests
 - [ ] **Re-enable `test_browser_config.py.disabled`**: Browser configuration tests
-- [ ] **Re-enable `test_error_handling.py.disabled`**: Error handling validation tests
+- [ ] **Re-enable `test_error_handling.py.disabled`**: Error handling validation tests (needs timeout fixes)
 - [ ] **Re-enable `test_file_upload.py.disabled`**: File upload functionality tests
 - [ ] **Re-enable `test_javascript.py.disabled`**: JavaScript execution tests
 - [ ] **Re-enable `test_logging.py.disabled`**: Logging functionality tests

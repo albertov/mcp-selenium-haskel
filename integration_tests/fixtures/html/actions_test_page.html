@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Actions Test Page</title>
+    <style>
+        .test-element {
+            margin: 20px;
+            padding: 20px;
+            border: 2px solid #ccc;
+            display: inline-block;
+            background-color: #f0f0f0;
+            cursor: pointer;
+        }
+        .hovered {
+            background-color: #ffff99;
+        }
+        .right-clicked {
+            background-color: #ff9999;
+        }
+        .double-clicked {
+            background-color: #99ff99;
+        }
+        .draggable {
+            background-color: #99ccff;
+            position: relative;
+        }
+        .drop-zone {
+            min-height: 100px;
+            background-color: #e0e0e0;
+            border: 2px dashed #999;
+            text-align: center;
+            line-height: 100px;
+        }
+        .dropped {
+            background-color: #ccffcc;
+        }
+        #result-log {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            white-space: pre-line;
+        }
+        /* Make body focusable to receive key events */
+        body {
+            outline: none;
+        }
+    </style>
+</head>
+<body tabindex="0">
+    <h1>Actions Test Page</h1>
+
+    <div id="hover-test" class="test-element"
+         onmouseover="logAction('hover')"
+         onmouseout="this.classList.remove('hovered')">
+        Hover Test Element
+    </div>
+
+    <div id="right-click-test" class="test-element"
+         oncontextmenu="logAction('right-click'); return false;">
+        Right Click Test Element
+    </div>
+
+    <div id="double-click-test" class="test-element"
+         ondblclick="logAction('double-click')">
+        Double Click Test Element
+    </div>
+
+    <div id="drag-source" class="test-element draggable"
+         draggable="true"
+         ondragstart="dragStart(event)"
+         onmousedown="mouseDownHandler(event)"
+         onmouseup="mouseUpHandler(event)">
+        Drag Source Element
+    </div>
+
+    <div id="drop-zone" class="drop-zone"
+         ondrop="drop(event)"
+         ondragover="allowDrop(event)"
+         onmouseup="dropZoneMouseUp(event)">
+        Drop Zone
+    </div>
+
+    <button id="test-button" class="test-element" onclick="buttonClicked()">
+        Regular Button
+    </button>
+
+    <div id="result-log"></div>
+
+    <script>
+        let isDragging = false;
+        let dragSource = null;
+
+        function logAction(action) {
+            const log = document.getElementById('result-log');
+            const timestamp = new Date().toISOString();
+            log.textContent += `${timestamp}: ${action} action detected\n`;
+
+            // Add visual feedback
+            const element = event.target;
+            if (action === 'hover') {
+                element.classList.add('hovered');
+            } else if (action === 'right-click') {
+                element.classList.add('right-clicked');
+            } else if (action === 'double-click') {
+                element.classList.add('double-clicked');
+            }
+        }
+
+        function buttonClicked() {
+            logAction('button-click');
+        }
+
+        // Mouse event handlers for drag simulation
+        function mouseDownHandler(event) {
+            if (event.target.id === 'drag-source') {
+                isDragging = true;
+                dragSource = event.target;
+                logAction('drag-start');
+            }
+        }
+
+        function mouseUpHandler(event) {
+            if (isDragging && dragSource) {
+                isDragging = false;
+                dragSource = null;
+            }
+        }
+
+        function dropZoneMouseUp(event) {
+            if (isDragging && dragSource) {
+                event.target.classList.add('dropped');
+                logAction('drop');
+                isDragging = false;
+                dragSource = null;
+            }
+        }
+
+        // HTML5 Drag and Drop handlers
+        function dragStart(event) {
+            event.dataTransfer.setData("text/plain", event.target.id);
+            logAction('drag-start');
+        }
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            const data = event.dataTransfer.getData("text/plain");
+            const sourceElement = document.getElementById(data);
+
+            if (sourceElement) {
+                event.target.classList.add('dropped');
+                logAction('drop');
+            }
+        }
+
+        // Global mouse up handler for drag operations
+        document.addEventListener('mouseup', function(event) {
+            if (isDragging && event.target.id === 'drop-zone') {
+                event.target.classList.add('dropped');
+                logAction('drop');
+            }
+            isDragging = false;
+            dragSource = null;
+        });
+
+        // Add keyboard event listeners to document and body
+        document.addEventListener('keydown', function(event) {
+            logAction(`key-${event.key.toLowerCase()}`);
+        });
+
+        // Make sure body can receive key events
+        document.body.addEventListener('keydown', function(event) {
+            logAction(`key-${event.key.toLowerCase()}`);
+        });
+
+        // Log page load
+        window.addEventListener('load', function() {
+            logAction('page-loaded');
+            // Set focus to body so it can receive key events
+            document.body.focus();
+        });
+
+        // Ensure body stays focused for key events
+        document.addEventListener('click', function() {
+            setTimeout(function() {
+                document.body.focus();
+            }, 10);
+        });
+    </script>
+</body>
+</html>

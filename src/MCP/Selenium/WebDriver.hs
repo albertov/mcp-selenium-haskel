@@ -249,8 +249,32 @@ rightClickElement (SeleniumSession _ session) locator timeoutMs = do
 -- | Press a key
 pressKey :: SeleniumSession -> T.Text -> IO ()
 pressKey (SeleniumSession _ session) key = do
-  WD.runWD session $
-    WD.sendRawKeys key
+  WD.runWD session $ do
+    -- Use JavaScript to dispatch keyboard events for better compatibility
+    -- This ensures the events are triggered on the document
+    (_ :: Maybe ()) <-
+      executeJS
+        [WD.JSArg key]
+        [r|
+      var key = arguments[0];
+      var event = new KeyboardEvent('keydown', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(event);
+
+      // Also dispatch on the body element for additional compatibility
+      var bodyEvent = new KeyboardEvent('keydown', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+      });
+      document.body.dispatchEvent(bodyEvent);
+    |]
+    return ()
 
 -- | Upload file to input element
 uploadFileToElement :: SeleniumSession -> LocatorStrategy -> T.Text -> Int -> IO ()
@@ -285,10 +309,8 @@ getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
 
 -- | Get available log types for the current session
 getAvailableLogTypes :: SeleniumSession -> IO [LogType]
-getAvailableLogTypes _ = do
-  -- Since getAvailableLogTypes is not available in this version of webdriver,
-  -- return the common log types that are typically supported
-  return ["browser", "driver", "performance", "server", "client"]
+getAvailableLogTypes (SeleniumSession _ session) = do
+  WD.runWD session WD.getLogTypes
 
 -- | Inject JavaScript console logger to capture console messages
 injectConsoleLogger :: SeleniumSession -> Int -> IO ()
