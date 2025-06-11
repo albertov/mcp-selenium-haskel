@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: mcp-selenium
-version: 2.2.2
+version: 0.1.0
 synopsis: A Haskell implementation of MCP Selenium Server using WebDriver
 description:
   A Model Context Protocol (MCP) server implementation for Selenium WebDriver in Haskell,
@@ -16,6 +16,8 @@ description:
   - Support for headless mode
   - Console logs functionality
   - Support for Chrome and Firefox browsers
+
+  This project is heavily inspired by https://github.com/angiejones/mcp-selenium
 
 homepage: https://github.com/albertov/mcp-selenium-haskell
 bug-reports: https://github.com/albertov/mcp-selenium-haskell/issues

@@ -20,7 +20,9 @@ everything still works. Fix it otherwise
 When your work is ready, you MUST run the 'changed_files' tool to get a list of all the files
 that have been modified in this branch and bump the version and update the
 changelog of all packages that have been modified, not the ones that have been
-newly created.
+newly created. Do not do this if the date of the latest entry of the changelog
+is "UNRELEASED". In this case, update the latest entry but do not bump the
+version.
 """
 
 [commands.format]

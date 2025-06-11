@@ -4,7 +4,7 @@ A Haskell implementation of MCP Selenium Server using WebDriver, enabling browse
 
 ## Credits
 
-This implementation is inspired by the original concept developed by [Angie Jones](https://github.com/angiejones/mcp-selenium). We thank the original contributors for their foundational work in MCP Selenium automation.
+This implementation is inspired by the [mcp-selenium project developed by Angie Jones](https://github.com/angiejones/mcp-selenium). We thank the original contributors for their foundational work in MCP Selenium automation.
 
 ## Features
 
@@ -17,17 +17,27 @@ This implementation is inspired by the original concept developed by [Angie Jone
 - Support for headless mode
 - Console logs functionality
 - Support for Chrome and Firefox browsers
+- Statically linked executable, so it's relatively small and works anywhere.
 
 ## Building
 
 ```bash
+nix develop
+# inside the shell that will open...
 cabal build
 ```
 
 ## Running
 
+### From the flake
+
 ```bash
 nix run github:albertov/mcp-selenium-haskell
+```
+
+### From the release
+```bash
+mcp-selenium-hs
 ```
 
 ## Claude Desktop Configuration
@@ -38,9 +48,29 @@ To use this MCP server with Claude Desktop, add the following configuration to y
 {
   "mcpServers": {
     "selenium": {
+      "command": "mcp-selenium-hs",
+      "args": [],
+      "env": {
+         "SELENIUM_HOST": "some.tailscale.host",
+         "SELENIUM_PORT": "1234",
+      }
+    }
+  }
+}
+```
+
+Or from a flake
+
+```json
+{
+  "mcpServers": {
+    "selenium": {
       "command": "nix",
       "args": ["run", "github:albertov/mcp-selenium-haskell"],
-      "env": {}
+      "env": {
+         "SELENIUM_HOST": "some.tailscale.host",
+         "SELENIUM_PORT": "1234",
+      }
     }
   }
 }
