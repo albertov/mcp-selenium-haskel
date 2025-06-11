@@ -36,7 +36,8 @@ module MCP.Selenium.WebDriver
 where
 
 import Control.Exception (Exception)
-import Data.Aeson (FromJSON, ToJSON, Value (..), object, parseJSON, toJSON)
+import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
+import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
@@ -132,20 +133,31 @@ createWebDriverConfig browserType opts = do
                 { chromeDriverVersion = mempty,
                   chromeBinary = mempty,
                   chromeOptions =
-                    ["--width=1024", "--height=768", "--enable-logging", "--log-level=0", "--v=1"]
+                    ["--width=1024", "--height=768", "--enable-logging", "--log-level=0", "--v=1", "--enable-network-service-logging", "--no-sandbox", "--disable-dev-shm-usage"]
                       <> if fromMaybe False (headless opts)
-                        then ["--headless=new", "--no-sandbox", "--disable-gpu"]
+                        then ["--headless=new", "--disable-gpu"]
                         else [],
                   chromeExtensions = mempty,
                   chromeExperimentalOptions = mempty
                 },
             WD.additionalCaps =
-              [ ( "loggingPrefs",
-                  object
-                    [ ("browser", String "ALL"),
-                      ("driver", String "ALL"),
-                      ("performance", String "ALL")
-                    ]
+              [ ( "goog:loggingPrefs",
+                  [aesonQQ|
+                    {
+                      "browser": "ALL",
+                      "driver": "ALL",
+                      "performance": "ALL"
+                    }
+                  |]
+                ),
+                ( "loggingPrefs",
+                  [aesonQQ|
+                    {
+                      "browser": "ALL",
+                      "driver": "ALL",
+                      "performance": "ALL"
+                    }
+                  |]
                 )
               ]
           }

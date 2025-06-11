@@ -7,4 +7,4 @@ cabal build
 cabal test
 NEWPYTHONPATH="$(pwd)/integration_tests:$PYTHONPATH"
 export PYTHONPATH="${NEWPYTHONPATH}"
-exec timeout 120s python3 integration_tests/orchestrate_integration_tests.py
+exec timeout 120s python3 integration_tests/orchestrate_integration_tests.py "$@"
