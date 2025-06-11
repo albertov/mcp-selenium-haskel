@@ -40,11 +40,11 @@ createSeleniumServer = do
           <> "SESSION MANAGEMENT PROTOCOL:\n"
           <> "1. Start a session: Call 'start_browser' tool to get a session_id\n"
           <> "2. Use session_id: All subsequent tools require the session_id parameter\n"
-          <> "3. Close session: Call 'close_session' with session_id to cleanup\n\n"
+          <> "3. Close session: Call 'close_browser' with session_id to cleanup\n\n"
           <> "WORKFLOW:\n"
           <> "- start_browser → returns session_id\n"
           <> "- navigate, find_element, click_element, etc. → require session_id\n"
-          <> "- close_session → cleanup with session_id\n\n"
+          <> "- close_browser → cleanup with session_id\n\n"
           <> "Multiple sessions can be active simultaneously with different session_ids."
 
   server <- createServer serverInfo serverCapabilities instructions
@@ -99,7 +99,7 @@ createHandler tools request = do
     "press_key" -> parseAndHandle handlePressKey
     "upload_file" -> parseAndHandle handleUploadFile
     "take_screenshot" -> parseAndHandle handleTakeScreenshot
-    "close_session" -> parseAndHandle handleCloseSession
+    "close_browser" -> parseAndHandle handleCloseBrowser
     "get_console_logs" -> parseAndHandle handleGetConsoleLogs
     "get_available_log_types" -> parseAndHandle handleGetAvailableLogTypes
     "inject_console_logger" -> parseAndHandle handleInjectConsoleLogger
@@ -501,7 +501,7 @@ takeScreenshotTool =
 closeSessionTool :: Tool
 closeSessionTool =
   Tool
-    { toolName = "close_session",
+    { toolName = "close_browser",
       toolDescription = Just "Closes the current browser session and cleans up resources",
       toolInputSchema =
         [aesonQQ|{

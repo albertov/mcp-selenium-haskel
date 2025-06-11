@@ -55,7 +55,7 @@ Launches a browser session with configurable options.
 
 ---
 
-### close_session
+### close_browser
 
 Closes the current browser session and cleans up resources.
 
@@ -566,7 +566,7 @@ Common error scenarios:
 
 // 7. Clean up
 {
-  "tool": "close_session",
+  "tool": "close_browser",
   "arguments": {
     "session_id": "550e8400-e29b-41d4-a716-446655440000"
   }

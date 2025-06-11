@@ -72,7 +72,7 @@ class MCPSeleniumClient:
         session_required_tools = {
             "navigate", "find_element", "click_element", "send_keys", "get_element_text",
             "hover", "drag_and_drop", "double_click", "right_click", "press_key",
-            "upload_file", "take_screenshot", "close_session", "get_console_logs",
+            "upload_file", "take_screenshot", "close_browser", "get_console_logs",
             "get_available_log_types", "inject_console_logger", "get_injected_console_logs",
             "get_source"
         }
@@ -161,7 +161,7 @@ class MCPSeleniumClient:
         if not self.session_id:
             return {"error": "No active browser session to close."}
 
-        result = await self.call_tool("close_session", {})
+        result = await self.call_tool("close_browser", {})
         # Clear session_id after closing
         if "error" not in result:
             self.session_id = None

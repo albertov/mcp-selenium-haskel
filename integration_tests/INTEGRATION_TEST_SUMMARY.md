@@ -48,17 +48,17 @@ Additional comprehensive test files have been created but are temporarily disabl
 
 ## Issues Identified
 
-### 1. close_session Tool Parameter Parsing Bug 🐛
+### 1. close_browser Tool Parameter Parsing Bug 🐛
 **Status**: Bug in Haskell server
-**Description**: The `close_session` tool fails to parse empty parameters `{}` despite having a schema that accepts an empty object.
+**Description**: The `close_browser` tool fails to parse empty parameters `{}` despite having a schema that accepts an empty object.
 **Evidence**:
 ```
-SERVER_DEBUG: Handler called for tool: close_session
+SERVER_DEBUG: Handler called for tool: close_browser
 SERVER_DEBUG: Parsing arguments: Object (fromList [])
 SERVER_DEBUG: Failed to parse parameters
 ```
 **Impact**: Sessions cannot be properly closed, leading to resource leaks
-**Root Cause**: Mismatch between JSON schema (`{"type": "object"}`) and Haskell `CloseSessionParams` data type structure
+**Root Cause**: Mismatch between JSON schema (`{"type": "object"}`) and Haskell `CloseBrowserParams` data type structure
 
 ### 2. Test Suite Performance
 **Status**: Mitigated by selective test execution
@@ -82,7 +82,7 @@ All expected MCP tools are properly registered and accessible:
 - `press_key` - Special key presses
 - `upload_file` - File upload functionality
 - `take_screenshot` - Screenshot capture
-- `close_session` - Session cleanup (has parsing bug)
+- `close_browser` - Session cleanup (has parsing bug)
 
 ### Parameter Validation ✅
 - Proper error handling for missing required parameters
@@ -111,7 +111,7 @@ All expected MCP tools are properly registered and accessible:
 ## Recommendations
 
 ### Immediate Actions Required
-1. **Fix close_session parameter parsing**: Update the Haskell server to properly handle empty JSON objects for the close_session tool
+1. **Fix close_browser parameter parsing**: Update the Haskell server to properly handle empty JSON objects for the close_browser tool
 2. **Resource cleanup**: Without proper session cleanup, browser processes may accumulate over time
 
 ### Future Enhancements
@@ -126,6 +126,6 @@ All expected MCP tools are properly registered and accessible:
 - **Success Rate**: 100% (18/18 passing)
 - **Execution Time**: 24.46 seconds (within 30s timeout)
 - **Coverage**: All core MCP Selenium functionality verified
-- **Issues Found**: 1 critical bug (close_session parameter parsing)
+- **Issues Found**: 1 critical bug (close_browser parameter parsing)
 
 The integration test suite successfully validates that the mcp-selenium server properly implements the MCP protocol and provides reliable Selenium WebDriver functionality through the standardized interface, with the noted exception of the session cleanup functionality.

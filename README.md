@@ -28,7 +28,7 @@ This project is a Haskell reimplementation of the original JavaScript [mcp-selen
 
 ### 🛠️ **Feature Completeness**
 - **Node.js**: ✅ **Mature and stable** - All tools working, stable implementation (v0.1.21)
-- **Haskell**: ⚠️ **Nearly feature-complete** - All tools implemented but has some bugs that need resolution (e.g., `close_session` parameter parsing)
+- **Haskell**: ⚠️ **Nearly feature-complete** - All tools implemented but has some bugs that need resolution (e.g., `close_browser` parameter parsing)
 
 ### 📋 **Tool API Comparison**
 Both implementations provide identical MCP tool interfaces, but differ in session management:

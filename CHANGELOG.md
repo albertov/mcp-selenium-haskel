@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory
 - **BREAKING**: Restructured Python package to use proper module naming (underscores)
 - **BREAKING**: Removed `strategy` parameter from `find_element` tool, keeping only `by` parameter for locator strategy
+- **BREAKING**: Renamed MCP tool from `close_session` to `close_browser` for consistency with other browser automation tools
 - Modernized build system from `writeShellApplication` to `buildPythonApplication`
 - Updated from manual dependency management to automatic transitive dependency resolution
 - Converted to modern `format = "pyproject"` with `hatchling` build backend
@@ -50,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Created new `MCP.Selenium.Utils` module with `debugLog` helper function
 - Updated all modules to use shared logging utility for improved maintainability
 - Removed code duplication across Server and Tools modules
+- Renamed Haskell types and functions from `CloseSession*` to `CloseBrowser*` to match the MCP tool rename
 
 ### Technical Details
 - Replaced custom shell scripts with proper Python console script entry points

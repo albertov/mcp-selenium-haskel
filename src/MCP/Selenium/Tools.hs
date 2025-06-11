@@ -21,7 +21,7 @@ module MCP.Selenium.Tools
     PressKeyParams (..),
     UploadFileParams (..),
     TakeScreenshotParams (..),
-    CloseSessionParams (..),
+    CloseBrowserParams (..),
     GetConsoleLogsParams (..),
     GetAvailableLogTypesParams (..),
     InjectConsoleLoggerParams (..),
@@ -45,7 +45,7 @@ module MCP.Selenium.Tools
     handlePressKey,
     handleUploadFile,
     handleTakeScreenshot,
-    handleCloseSession,
+    handleCloseBrowser,
     handleGetConsoleLogs,
     handleGetAvailableLogTypes,
     handleInjectConsoleLogger,
@@ -186,7 +186,7 @@ newtype TakeScreenshotParams = TakeScreenshotParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype CloseSessionParams = CloseSessionParams
+newtype CloseBrowserParams = CloseBrowserParams
   { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
@@ -511,9 +511,9 @@ handleTakeScreenshot tools (TakeScreenshotParams sessionId) = do
         )
         (\e -> return $ errorResult $ "Screenshot failed: " <> T.pack (show (e :: SomeException)))
 
--- | Handle close_session tool
-handleCloseSession :: SeleniumTools -> CloseSessionParams -> IO CallToolResult
-handleCloseSession tools (CloseSessionParams sessionId) = do
+-- | Handle close_browser tool
+handleCloseBrowser :: SeleniumTools -> CloseBrowserParams -> IO CallToolResult
+handleCloseBrowser tools (CloseBrowserParams sessionId) = do
   sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
     Nothing -> return $ successResult "Session not found or already closed"
