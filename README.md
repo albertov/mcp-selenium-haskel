@@ -300,9 +300,39 @@ mcp-proxy --port=8080 \
   mcp-selenium-hs
 ```
 
-Supported environment variables:
-- `SELENIUM_HOST`: Selenium server hostname (default: `127.0.0.1`)
-- `SELENIUM_PORT`: Selenium server port (default: `4444`)
+**Complete list of supported environment variables:**
+
+| Variable | Default | Description | Example |
+|----------|---------|-------------|---------|
+| `SELENIUM_HOST` | `127.0.0.1` | Hostname or IP address of the Selenium WebDriver server | `selenium.example.com` |
+| `SELENIUM_PORT` | `4444` | Port number of the Selenium WebDriver server | `4444` |
+
+**Configuration Examples:**
+
+For local Selenium server (default):
+```bash
+# These are the defaults, no configuration needed
+export SELENIUM_HOST=127.0.0.1
+export SELENIUM_PORT=4444
+```
+
+For remote Selenium Grid:
+```bash
+export SELENIUM_HOST=selenium-grid.company.com
+export SELENIUM_PORT=4444
+```
+
+For Docker-based Selenium:
+```bash
+export SELENIUM_HOST=selenium-container
+export SELENIUM_PORT=4444
+```
+
+For Selenium running on different port:
+```bash
+export SELENIUM_HOST=localhost
+export SELENIUM_PORT=8080
+```
 
 ### CORS Configuration
 

@@ -3,11 +3,79 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | MCP Tools for Selenium browser automation
+-- |
+-- Module: MCP.Selenium.Tools
+-- Description: MCP Tools for Selenium browser automation
+--
+-- This module provides the complete set of MCP tools for browser automation,
+-- including session management, element interaction, and console logging capabilities.
+-- It implements a thread-safe multi-session architecture using Software Transactional Memory (STM).
+--
+-- = Core Types
+--
+-- The module defines several key types for session and operation management:
+--
+-- * 'SessionId': UUID-based unique identifier for browser sessions
+-- * 'SessionData': Container for session metadata and WebDriver session
+-- * 'SeleniumTools': Main state container with concurrent session map
+-- * Parameter types for each MCP tool (e.g., 'ClickElementParams', 'SendKeysParams')
+--
+-- = Session Management Architecture
+--
+-- The session management system provides:
+--
+-- 1. **Concurrent Access**: Thread-safe operations using STM TVar
+-- 2. **UUID Generation**: Cryptographically secure session identifiers
+-- 3. **Session Isolation**: Independent browser instances per session
+-- 4. **Resource Cleanup**: Proper session cleanup on close/error
+--
+-- = Tool Handler Functions
+--
+-- Each MCP tool is implemented as a handler function that:
+--
+-- 1. Validates the session_id parameter
+-- 2. Looks up the session in the session map
+-- 3. Performs the WebDriver operation
+-- 4. Returns standardized MCP results
+--
+-- = Example Usage
+--
+-- @
+-- -- Create tools instance
+-- tools <- createSeleniumTools
+--
+-- -- Generate a new session
+-- sessionId <- generateSessionId
+--
+-- -- Look up an existing session
+-- maybeSession <- lookupSession tools sessionId
+--
+-- -- Handle a tool call
+-- result <- handleClickElement tools clickParams
+-- @
+--
+-- = Error Handling
+--
+-- All tool handlers follow a consistent error handling pattern:
+--
+-- * Session validation (session not found errors)
+-- * WebDriver operation execution with exception catching
+-- * Standardized error response format
+--
+-- = Thread Safety
+--
+-- The module uses STM for thread-safe operations:
+--
+-- * 'TVar' for the session map ensures atomic updates
+-- * Session lookup and modification are atomic operations
+-- * Multiple concurrent tool calls are safely handled
 module MCP.Selenium.Tools
-  ( SeleniumTools (..),
+  ( -- * Core Types
+    SeleniumTools (..),
     SessionId,
     SessionData (..),
+
+    -- * Tool Parameter Types
     StartBrowserParams (..),
     NavigateParams (..),
     FindElementParams (..),
@@ -27,11 +95,15 @@ module MCP.Selenium.Tools
     InjectConsoleLoggerParams (..),
     GetInjectedConsoleLogsParams (..),
     GetSourceParams (..),
+
+    -- * Session Management
     createSeleniumTools,
     generateSessionId,
     lookupSession,
     insertSession,
     removeSession,
+
+    -- * Tool Handlers
     handleStartBrowser,
     handleNavigate,
     handleFindElement,
@@ -71,10 +143,32 @@ import MCP.Selenium.WebDriver
 import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType (..))
 
 -- | Session management types
+
+-- | Unique identifier for browser sessions using UUID v4
+--
+-- Example:
+-- @
+-- sessionId <- generateSessionId
+-- -- sessionId :: SessionId (UUID)
+-- @
 type SessionId = UUID
 
+-- | Container for session data including the session identifier and WebDriver session
+--
+-- This type encapsulates both the session metadata and the actual WebDriver session
+-- for a browser instance. Each SessionData represents one active browser session.
+--
+-- Example:
+-- @
+-- sessionData = SessionData
+--   { sessionKey = someUUID
+--   , seleniumSession = webDriverSession
+--   }
+-- @
 data SessionData = SessionData
-  { sessionKey :: SessionId,
+  { -- | The unique session identifier
+    sessionKey :: SessionId,
+    -- | The underlying WebDriver session
     seleniumSession :: SeleniumSession
   }
   deriving (Generic)
@@ -84,6 +178,21 @@ instance Show SessionData where
 
 instance Eq SessionData where
   (SessionData key1 _) == (SessionData key2 _) = key1 == key2
+
+-- | Main state container for the Selenium MCP server
+--
+-- This type holds the concurrent session map that tracks all active browser sessions.
+-- It uses Software Transactional Memory (STM) for thread-safe access to the session map.
+--
+-- Example:
+-- @
+-- tools <- createSeleniumTools
+-- -- tools :: SeleniumTools
+-- @
+newtype SeleniumTools = SeleniumTools
+  { -- | Thread-safe session map
+    sessionsVar :: TVar (HashMap.HashMap SessionId SessionData)
+  }
 
 -- | Tool parameter types
 data StartBrowserParams = StartBrowserParams
@@ -220,11 +329,6 @@ newtype GetSourceParams = GetSourceParams
   { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
-
--- | Selenium tools container
-newtype SeleniumTools = SeleniumTools
-  { sessionsVar :: TVar (HashMap.HashMap SessionId SessionData)
-  }
 
 -- | Parse locator strategy from text
 parseLocatorStrategy :: T.Text -> T.Text -> LocatorStrategy

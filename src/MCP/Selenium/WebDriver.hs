@@ -5,33 +5,108 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | WebDriver operations wrapper for Selenium automation
+-- |
+-- Module: MCP.Selenium.WebDriver
+-- Description: WebDriver operations wrapper for Selenium automation
+--
+-- This module provides a Haskell wrapper around the Selenium WebDriver for browser automation.
+-- It abstracts common browser operations and provides a type-safe interface for web automation tasks.
+--
+-- = Key Features
+--
+-- * Type-safe browser configuration and session management
+-- * Support for Chrome and Firefox browsers with comprehensive options
+-- * Element location using multiple strategies (ID, CSS, XPath, etc.)
+-- * Advanced browser interactions (hover, drag-and-drop, right-click)
+-- * Console logging and JavaScript injection capabilities
+-- * Screenshot capture and page source retrieval
+--
+-- = Browser Support
+--
+-- Currently supported browsers:
+--
+-- * **Chrome**: Full feature support with extensive configuration options
+-- * **Firefox**: Basic support with standard configuration options
+--
+-- = Configuration
+--
+-- The WebDriver connects to a Selenium server specified by environment variables:
+--
+-- * @SELENIUM_HOST@: Server hostname (default: "127.0.0.1")
+-- * @SELENIUM_PORT@: Server port (default: "4444")
+--
+-- = Example Usage
+--
+-- @
+-- import MCP.Selenium.WebDriver
+--
+-- -- Create a browser session
+-- session <- initializeSession Chrome (Just defaultChromeOptions)
+--
+-- -- Navigate to a page
+-- navigateToUrl session "https://example.com"
+--
+-- -- Find and interact with elements
+-- element <- findElementByLocator session (CSSSelector "#button")
+-- clickElement session (CSSSelector "#button") 5000
+--
+-- -- Take a screenshot
+-- screenshot <- takeScreenshot session Nothing
+--
+-- -- Clean up
+-- closeSeleniumSession session
+-- @
+--
+-- = Error Handling
+--
+-- All operations can throw 'SeleniumException' for WebDriver-related errors.
+-- Callers should handle these exceptions appropriately.
+--
+-- = Thread Safety
+--
+-- Individual sessions are not thread-safe, but multiple sessions can be used
+-- concurrently from different threads safely.
 module MCP.Selenium.WebDriver
-  ( SeleniumSession (..),
+  ( -- * Core Types
+    SeleniumSession (..),
     BrowserOptions (..),
     Browser (..),
     LocatorStrategy (..),
     LogEntry (..),
     LogLevel (..),
+
+    -- * Session Management
     initializeSession,
     closeSeleniumSession,
+
+    -- * Navigation
     navigateToUrl,
+
+    -- * Element Operations
     findElementByLocator,
     clickElement,
     sendKeysToElement,
     getElementText,
+
+    -- * Advanced Actions
     hoverElement,
     dragAndDropElements,
     doubleClickElement,
     rightClickElement,
     pressKey,
+
+    -- * File Operations
     uploadFileToElement,
+
+    -- * Utility Operations
     takeScreenshot,
+    getPageSource,
+
+    -- * Console Logging
     getConsoleLogs,
     getAvailableLogTypes,
     injectConsoleLogger,
     getInjectedConsoleLogs,
-    getPageSource,
   )
 where
 

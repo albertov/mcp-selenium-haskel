@@ -2,7 +2,62 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
--- | Main MCP server implementation for Selenium automation
+-- |
+-- Module: MCP.Selenium.Server
+-- Description: Main MCP server implementation for Selenium automation
+--
+-- This module provides the core MCP (Model Context Protocol) server implementation
+-- for browser automation using Selenium WebDriver. It implements a multi-session
+-- architecture where each browser session is identified by a unique UUID, allowing
+-- multiple concurrent browser sessions to be managed independently.
+--
+-- = Key Features
+--
+-- * Multi-session browser management with UUID-based session IDs
+-- * Support for Chrome and Firefox browsers
+-- * Comprehensive tool suite for browser automation
+-- * Session isolation and resource management
+-- * Integration with Selenium WebDriver
+--
+-- = Session Architecture
+--
+-- The server uses a multi-session model where:
+--
+-- 1. Each browser session is identified by a unique UUID ('SessionId')
+-- 2. Sessions are stored in a concurrent hash map for thread-safe access
+-- 3. All tools (except start_browser) require a valid session_id parameter
+-- 4. Sessions can be created, used, and closed independently
+--
+-- = Environment Configuration
+--
+-- The server can be configured using environment variables:
+--
+-- * @SELENIUM_HOST@: WebDriver server hostname (default: "127.0.0.1")
+-- * @SELENIUM_PORT@: WebDriver server port (default: "4444")
+--
+-- = Example Usage
+--
+-- @
+-- import MCP.Selenium.Server
+--
+-- main :: IO ()
+-- main = do
+--   server <- createSeleniumServer
+--   runSeleniumServer server
+-- @
+--
+-- = Tool Categories
+--
+-- The server provides tools organized into categories:
+--
+-- * Session Management: start_browser, close_browser
+-- * Navigation: navigate
+-- * Element Location: find_element
+-- * Element Interaction: click_element, send_keys, get_element_text
+-- * Advanced Actions: hover, double_click, right_click, drag_and_drop, press_key
+-- * File Operations: upload_file
+-- * Utility Operations: take_screenshot, get_source
+-- * Console Logging: get_console_logs, inject_console_logger, etc.
 module MCP.Selenium.Server
   ( createSeleniumServer,
     runSeleniumServer,

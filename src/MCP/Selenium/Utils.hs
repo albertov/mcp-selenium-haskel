@@ -1,6 +1,33 @@
--- | Shared utility functions for MCP Selenium
+-- |
+-- Module: MCP.Selenium.Utils
+-- Description: Shared utility functions for MCP Selenium
+--
+-- This module provides common utility functions used throughout the MCP Selenium implementation.
+-- It includes logging helpers and other shared functionality.
+--
+-- = Logging Utilities
+--
+-- The module provides debug logging functionality that writes to stderr with automatic flushing.
+-- This ensures that debug messages are immediately visible even in buffered output scenarios.
+--
+-- = Example Usage
+--
+-- @
+-- import MCP.Selenium.Utils
+--
+-- main :: IO ()
+-- main = do
+--   debugLog "Starting selenium server"
+--   -- ... application logic ...
+--   debugLog "Server ready"
+-- @
+--
+-- = Thread Safety
+--
+-- The logging functions are thread-safe and can be called concurrently from multiple threads.
 module MCP.Selenium.Utils
-  ( debugLog,
+  ( -- * Logging
+    debugLog,
   )
 where
 
