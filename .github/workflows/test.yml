@@ -3,7 +3,6 @@ permissions:
   contents: read
 on:
   pull_request:
-  push:
   workflow_dispatch:
 jobs:
   tests:
@@ -19,7 +18,9 @@ jobs:
       with:
         name: mcp-selenium-haskell
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-    - name: Build everything
+    - name: Build executable
       run: nix build --accept-flake-config
-    # - name: Run checks
-    # run: nix flake check
+    - name: Run checks
+      run: nix flake check
+    - name: Run integration tests
+      run: "nix run .#integration-tests"

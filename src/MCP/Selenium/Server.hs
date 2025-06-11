@@ -2,7 +2,62 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
--- | Main MCP server implementation for Selenium automation
+-- |
+-- Module: MCP.Selenium.Server
+-- Description: Main MCP server implementation for Selenium automation
+--
+-- This module provides the core MCP (Model Context Protocol) server implementation
+-- for browser automation using Selenium WebDriver. It implements a multi-session
+-- architecture where each browser session is identified by a unique UUID, allowing
+-- multiple concurrent browser sessions to be managed independently.
+--
+-- = Key Features
+--
+-- * Multi-session browser management with UUID-based session IDs
+-- * Support for Chrome and Firefox browsers
+-- * Comprehensive tool suite for browser automation
+-- * Session isolation and resource management
+-- * Integration with Selenium WebDriver
+--
+-- = Session Architecture
+--
+-- The server uses a multi-session model where:
+--
+-- 1. Each browser session is identified by a unique UUID ('SessionId')
+-- 2. Sessions are stored in a concurrent hash map for thread-safe access
+-- 3. All tools (except start_browser) require a valid session_id parameter
+-- 4. Sessions can be created, used, and closed independently
+--
+-- = Environment Configuration
+--
+-- The server can be configured using environment variables:
+--
+-- * @SELENIUM_HOST@: WebDriver server hostname (default: "127.0.0.1")
+-- * @SELENIUM_PORT@: WebDriver server port (default: "4444")
+--
+-- = Example Usage
+--
+-- @
+-- import MCP.Selenium.Server
+--
+-- main :: IO ()
+-- main = do
+--   server <- createSeleniumServer
+--   runSeleniumServer server
+-- @
+--
+-- = Tool Categories
+--
+-- The server provides tools organized into categories:
+--
+-- * Session Management: start_browser, close_browser
+-- * Navigation: navigate
+-- * Element Location: find_element
+-- * Element Interaction: click_element, send_keys, get_element_text
+-- * Advanced Actions: hover, double_click, right_click, drag_and_drop, press_key
+-- * File Operations: upload_file
+-- * Utility Operations: take_screenshot, get_source
+-- * Console Logging: get_console_logs, inject_console_logger, etc.
 module MCP.Selenium.Server
   ( createSeleniumServer,
     runSeleniumServer,
@@ -16,32 +71,36 @@ import Data.Aeson.Types (parseMaybe)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import MCP.Selenium.Tools
+import MCP.Selenium.Utils (debugLog)
 import Network.MCP.Server (Server, createServer, registerToolCallHandler, registerTools)
 import Network.MCP.Server.StdIO (runServerWithSTDIO)
 import Network.MCP.Server.Types (ToolCallHandler)
 import Network.MCP.Types (CallToolRequest (..), CallToolResult (..), Implementation (..), ServerCapabilities (..), Tool (..), ToolContent (..), ToolContentType (..), ToolsCapability (..))
-import System.IO (hFlush, hPutStrLn, stderr)
-
--- | Debug logging helper
-debugLog :: String -> IO ()
-debugLog msg = do
-  hPutStrLn stderr $ "SERVER_DEBUG: " ++ msg
-  hFlush stderr
 
 -- | Create a complete Selenium MCP server with all tools
 createSeleniumServer :: IO Server
 createSeleniumServer = do
   tools <- createSeleniumTools
-  debugLog "Created SeleniumTools instance"
+  debugLog "SERVER_DEBUG: Created SeleniumTools instance"
 
-  let serverInfo = Implementation "mcp-selenium-haskell" "1.0.0"
+  let serverInfo = Implementation "mcp-selenium-haskell" "0.1.0"
       serverCapabilities =
         ServerCapabilities
           { resourcesCapability = Nothing,
             toolsCapability = Just (ToolsCapability True),
             promptsCapability = Nothing
           }
-      instructions = "Selenium WebDriver automation server for browser automation tasks"
+      instructions =
+        "Selenium WebDriver automation server for browser automation tasks.\n\n"
+          <> "SESSION MANAGEMENT PROTOCOL:\n"
+          <> "1. Start a session: Call 'start_browser' tool to get a session_id\n"
+          <> "2. Use session_id: All subsequent tools require the session_id parameter\n"
+          <> "3. Close session: Call 'close_browser' with session_id to cleanup\n\n"
+          <> "WORKFLOW:\n"
+          <> "- start_browser → returns session_id\n"
+          <> "- navigate, find_element, click_element, etc. → require session_id\n"
+          <> "- close_browser → cleanup with session_id\n\n"
+          <> "Multiple sessions can be active simultaneously with different session_ids."
 
   server <- createServer serverInfo serverCapabilities instructions
 
@@ -64,14 +123,15 @@ createSeleniumServer = do
           getConsoleLogsTool,
           getAvailableLogTypesTool,
           injectConsoleLoggerTool,
-          getInjectedConsoleLogsTool
+          getInjectedConsoleLogsTool,
+          getSourceTool
         ]
 
   registerTools server allTools
 
   -- Create handler with the same tools instance
   let handler = createHandler tools
-  debugLog "Created handler with tools instance"
+  debugLog "SERVER_DEBUG: Created handler with tools instance"
   registerToolCallHandler server handler
 
   return server
@@ -79,7 +139,7 @@ createSeleniumServer = do
 -- | Generic handler that routes tool calls to appropriate handlers
 createHandler :: SeleniumTools -> ToolCallHandler
 createHandler tools request = do
-  debugLog $ "Handler called for tool: " ++ T.unpack (callToolName request)
+  debugLog $ "SERVER_DEBUG: Handler called for tool: " ++ T.unpack (callToolName request)
   case callToolName request of
     "start_browser" -> parseAndHandle handleStartBrowser
     "navigate" -> parseAndHandle handleNavigate
@@ -94,23 +154,24 @@ createHandler tools request = do
     "press_key" -> parseAndHandle handlePressKey
     "upload_file" -> parseAndHandle handleUploadFile
     "take_screenshot" -> parseAndHandle handleTakeScreenshot
-    "close_session" -> parseAndHandle handleCloseSession
+    "close_browser" -> parseAndHandle handleCloseBrowser
     "get_console_logs" -> parseAndHandle handleGetConsoleLogs
     "get_available_log_types" -> parseAndHandle handleGetAvailableLogTypes
     "inject_console_logger" -> parseAndHandle handleInjectConsoleLogger
     "get_injected_console_logs" -> parseAndHandle handleGetInjectedConsoleLogs
+    "get_source" -> parseAndHandle handleGetSource
     _ -> return $ CallToolResult [ToolContent TextualContent (Just "Unknown tool")] True
   where
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
     parseAndHandle handler = do
       let args = object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))
-      debugLog $ "Parsing arguments: " ++ show args
+      debugLog $ "SERVER_DEBUG: Parsing arguments: " ++ show args
       case parseMaybe parseJSON args of
         Nothing -> do
-          debugLog "Failed to parse parameters"
+          debugLog "SERVER_DEBUG: Failed to parse parameters"
           return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
         Just params -> do
-          debugLog "Successfully parsed parameters, calling handler"
+          debugLog "SERVER_DEBUG: Successfully parsed parameters, calling handler"
           handler tools params
 
 -- | Tool definitions
@@ -160,12 +221,16 @@ navigateTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "url": {
             "type": "string",
             "description": "URL to navigate to"
           }
         },
-        "required": ["url"]
+        "required": ["session_id", "url"]
       }|]
     }
 
@@ -178,15 +243,14 @@ findElementTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
-          "strategy": {
+          "session_id": {
             "type": "string",
-            "enum": ["id", "css", "xpath", "name", "tag", "class"],
-            "description": "Locator strategy"
+            "description": "Session ID returned from start_browser"
           },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"],
-            "description": "Locator strategy (alternative to strategy)"
+            "description": "Locator strategy"
           },
           "value": {
             "type": "string",
@@ -198,7 +262,7 @@ findElementTool =
             "default": 10000
           }
         },
-        "required": ["value"]
+        "required": ["session_id", "value"]
       }|]
     }
 
@@ -211,6 +275,10 @@ clickElementTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -223,7 +291,7 @@ clickElementTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -236,6 +304,10 @@ sendKeysTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -252,7 +324,7 @@ sendKeysTool =
             "default": 10000
           }
         },
-        "required": ["by", "value", "text"]
+        "required": ["session_id", "by", "value", "text"]
       }|]
     }
 
@@ -265,6 +337,10 @@ getElementTextTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -277,7 +353,7 @@ getElementTextTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -290,6 +366,10 @@ hoverTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -302,7 +382,7 @@ hoverTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -315,6 +395,10 @@ dragAndDropTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -334,7 +418,7 @@ dragAndDropTool =
             "default": 10000
           }
         },
-        "required": ["by", "value", "targetBy", "targetValue"]
+        "required": ["session_id", "by", "value", "targetBy", "targetValue"]
       }|]
     }
 
@@ -347,6 +431,10 @@ doubleClickTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -359,7 +447,7 @@ doubleClickTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -372,6 +460,10 @@ rightClickTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -384,7 +476,7 @@ rightClickTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -397,12 +489,16 @@ pressKeyTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "key": {
             "type": "string",
             "description": "Key to press (e.g., 'Enter', 'Tab', 'a', etc.)"
           }
         },
-        "required": ["key"]
+        "required": ["session_id", "key"]
       }|]
     }
 
@@ -415,6 +511,10 @@ uploadFileTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -431,7 +531,7 @@ uploadFileTool =
             "default": 10000
           }
         },
-        "required": ["by", "value", "filePath"]
+        "required": ["session_id", "by", "value", "filePath"]
       }|]
     }
 
@@ -444,22 +544,30 @@ takeScreenshotTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
-          "outputPath": {
+          "session_id": {
             "type": "string",
-            "description": "Path where to save the screenshot. If not provided, returns base64 data."
+            "description": "Session ID returned from start_browser"
           }
-        }
+        },
+        "required": ["session_id"]
       }|]
     }
 
 closeSessionTool :: Tool
 closeSessionTool =
   Tool
-    { toolName = "close_session",
+    { toolName = "close_browser",
       toolDescription = Just "Closes the current browser session and cleans up resources",
       toolInputSchema =
         [aesonQQ|{
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -472,6 +580,10 @@ getConsoleLogsTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "logLevel": {
             "type": "string",
             "enum": ["ALL", "SEVERE", "WARNING", "INFO", "DEBUG"],
@@ -481,7 +593,8 @@ getConsoleLogsTool =
             "type": "number",
             "description": "Maximum number of log entries to return"
           }
-        }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -492,7 +605,14 @@ getAvailableLogTypesTool =
       toolDescription = Just "Retrieves the available log types supported by the current browser",
       toolInputSchema =
         [aesonQQ|{
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -503,7 +623,19 @@ injectConsoleLoggerTool =
       toolDescription = Just "Injects a script to capture all console messages including console.log, console.warn, etc.",
       toolInputSchema =
         [aesonQQ|{
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Script execution timeout in milliseconds (default: 60000)",
+            "default": 60000
+          }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -516,11 +648,34 @@ getInjectedConsoleLogsTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "clear": {
             "type": "boolean",
             "description": "Clear the captured logs after retrieving them (default: false)"
           }
-        }
+        },
+        "required": ["session_id"]
+      }|]
+    }
+
+getSourceTool :: Tool
+getSourceTool =
+  Tool
+    { toolName = "get_source",
+      toolDescription = Just "Gets the current page's HTML source code",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          }
+        },
+        "required": ["session_id"]
       }|]
     }
 

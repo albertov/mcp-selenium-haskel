@@ -3,10 +3,16 @@
 module Main (main) where
 
 import Data.Aeson (decode, encode)
+import qualified Data.UUID as UUID
 import MCP.Selenium.Server
-import MCP.Selenium.Tools
+import MCP.Selenium.Tools (ClickElementParams (..), CloseBrowserParams (..), DoubleClickParams (..), DragAndDropParams (..), FindElementParams (..), GetAvailableLogTypesParams (..), GetConsoleLogsParams (..), GetElementTextParams (..), GetInjectedConsoleLogsParams (..), GetSourceParams (..), HoverParams (..), InjectConsoleLoggerParams (..), NavigateParams (..), PressKeyParams (..), RightClickParams (..), SendKeysParams (..), SessionId, StartBrowserParams (..), TakeScreenshotParams (..), UploadFileParams (..), createSeleniumTools)
 import MCP.Selenium.WebDriver
+import SessionTest (sessionTests)
 import Test.Hspec
+
+-- | Dummy session ID for tests
+dummySessionId :: SessionId
+dummySessionId = UUID.nil
 
 -- | Test suite for mcp-selenium
 main :: IO ()
@@ -53,71 +59,108 @@ main = hspec $ do
 
     describe "NavigateParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = NavigateParams "https://example.com"
+        let params = NavigateParams dummySessionId "https://example.com"
         decode (encode params) `shouldBe` Just params
 
     describe "FindElementParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = FindElementParams (Just "id") Nothing "test-element" (Just 5000)
+        let params = FindElementParams dummySessionId (Just "id") "test-element" (Just 5000)
         decode (encode params) `shouldBe` Just params
 
     describe "ClickElementParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = ClickElementParams "css" ".button" Nothing
+        let params = ClickElementParams dummySessionId "css" ".button" Nothing
         decode (encode params) `shouldBe` Just params
 
     describe "SendKeysParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = SendKeysParams "name" "username" "testuser" (Just 3000)
+        let params = SendKeysParams dummySessionId "name" "username" "testuser" (Just 3000)
         decode (encode params) `shouldBe` Just params
 
     describe "GetElementTextParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = GetElementTextParams "xpath" "//h1" Nothing
+        let params = GetElementTextParams dummySessionId "xpath" "//h1" Nothing
         decode (encode params) `shouldBe` Just params
 
     describe "HoverParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = HoverParams "class" "menu-item" (Just 2000)
+        let params = HoverParams dummySessionId "class" "menu-item" (Just 2000)
         decode (encode params) `shouldBe` Just params
 
     describe "DragAndDropParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = DragAndDropParams "id" "draggable" "id" "droppable" Nothing
+        let params = DragAndDropParams dummySessionId "id" "draggable" "id" "droppable" Nothing
         decode (encode params) `shouldBe` Just params
 
     describe "DoubleClickParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = DoubleClickParams "tag" "button" (Just 1000)
+        let params = DoubleClickParams dummySessionId "tag" "button" (Just 1000)
         decode (encode params) `shouldBe` Just params
 
     describe "RightClickParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = RightClickParams "css" ".context-menu" Nothing
+        let params = RightClickParams dummySessionId "css" ".context-menu" Nothing
         decode (encode params) `shouldBe` Just params
 
     describe "PressKeyParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = PressKeyParams "Enter"
+        let params = PressKeyParams dummySessionId "Enter"
         decode (encode params) `shouldBe` Just params
 
     describe "UploadFileParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = UploadFileParams "id" "file-input" "/path/to/file.txt" (Just 5000)
+        let params = UploadFileParams dummySessionId "id" "file-input" "/path/to/file.txt" (Just 5000)
         decode (encode params) `shouldBe` Just params
 
     describe "TakeScreenshotParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = TakeScreenshotParams (Just "/tmp/screenshot.png")
+        let params = TakeScreenshotParams dummySessionId
         decode (encode params) `shouldBe` Just params
 
-      it "handles optional output path" $ do
-        let params = TakeScreenshotParams Nothing
+      it "handles constructor with session_id" $ do
+        let params = TakeScreenshotParams dummySessionId
         decode (encode params) `shouldBe` Just params
 
-    describe "CloseSessionParams" $ do
+    describe "CloseBrowserParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = CloseSessionParams
+        let params = CloseBrowserParams dummySessionId
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetConsoleLogsParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetConsoleLogsParams dummySessionId (Just "SEVERE") (Just 10)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional fields" $ do
+        let params = GetConsoleLogsParams dummySessionId Nothing Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetAvailableLogTypesParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetAvailableLogTypesParams dummySessionId
+        decode (encode params) `shouldBe` Just params
+
+    describe "InjectConsoleLoggerParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = InjectConsoleLoggerParams dummySessionId (Just 30000)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional timeout" $ do
+        let params = InjectConsoleLoggerParams dummySessionId Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetInjectedConsoleLogsParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetInjectedConsoleLogsParams dummySessionId (Just True)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional clear flag" $ do
+        let params = GetInjectedConsoleLogsParams dummySessionId Nothing
+        decode (encode params) `shouldBe` Just params
+
+    describe "GetSourceParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = GetSourceParams dummySessionId
         decode (encode params) `shouldBe` Just params
 
     describe "createSeleniumTools" $ do
@@ -132,3 +175,5 @@ main = hspec $ do
         server <- createSeleniumServer
         -- Basic check that it doesn't throw
         server `seq` return ()
+
+  sessionTests

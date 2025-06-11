@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-selenium-integration-tests"
+version = "0.1.0"
+description = "Integration tests for mcp-selenium-haskell"
+dependencies = [
+    "pytest",
+    "pytest-asyncio",
+    "mcp"
+]
+
+[project.scripts]
+mcp-selenium-integration-tests = "integration_tests.orchestrate_integration_tests:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["integration_tests"]

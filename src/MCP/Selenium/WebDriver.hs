@@ -5,28 +5,104 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | WebDriver operations wrapper for Selenium automation
+-- |
+-- Module: MCP.Selenium.WebDriver
+-- Description: WebDriver operations wrapper for Selenium automation
+--
+-- This module provides a Haskell wrapper around the Selenium WebDriver for browser automation.
+-- It abstracts common browser operations and provides a type-safe interface for web automation tasks.
+--
+-- = Key Features
+--
+-- * Type-safe browser configuration and session management
+-- * Support for Chrome and Firefox browsers with comprehensive options
+-- * Element location using multiple strategies (ID, CSS, XPath, etc.)
+-- * Advanced browser interactions (hover, drag-and-drop, right-click)
+-- * Console logging and JavaScript injection capabilities
+-- * Screenshot capture and page source retrieval
+--
+-- = Browser Support
+--
+-- Currently supported browsers:
+--
+-- * **Chrome**: Full feature support with extensive configuration options
+-- * **Firefox**: Basic support with standard configuration options
+--
+-- = Configuration
+--
+-- The WebDriver connects to a Selenium server specified by environment variables:
+--
+-- * @SELENIUM_HOST@: Server hostname (default: "127.0.0.1")
+-- * @SELENIUM_PORT@: Server port (default: "4444")
+--
+-- = Example Usage
+--
+-- @
+-- import MCP.Selenium.WebDriver
+--
+-- -- Create a browser session
+-- session <- initializeSession Chrome (Just defaultChromeOptions)
+--
+-- -- Navigate to a page
+-- navigateToUrl session "https://example.com"
+--
+-- -- Find and interact with elements
+-- element <- findElementByLocator session (CSSSelector "#button")
+-- clickElement session (CSSSelector "#button") 5000
+--
+-- -- Take a screenshot
+-- screenshot <- takeScreenshot session Nothing
+--
+-- -- Clean up
+-- closeSeleniumSession session
+-- @
+--
+-- = Error Handling
+--
+-- All operations can throw 'SeleniumException' for WebDriver-related errors.
+-- Callers should handle these exceptions appropriately.
+--
+-- = Thread Safety
+--
+-- Individual sessions are not thread-safe, but multiple sessions can be used
+-- concurrently from different threads safely.
 module MCP.Selenium.WebDriver
-  ( SeleniumSession (..),
+  ( -- * Core Types
+    SeleniumSession (..),
     BrowserOptions (..),
     Browser (..),
     LocatorStrategy (..),
     LogEntry (..),
     LogLevel (..),
+
+    -- * Session Management
     initializeSession,
     closeSeleniumSession,
+
+    -- * Navigation
     navigateToUrl,
+
+    -- * Element Operations
     findElementByLocator,
     clickElement,
     sendKeysToElement,
     getElementText,
+
+    -- * Advanced Actions
     hoverElement,
     dragAndDropElements,
     doubleClickElement,
     rightClickElement,
     pressKey,
+
+    -- * File Operations
     uploadFileToElement,
+
+    -- * Utility Operations
     takeScreenshot,
+    getPageSource,
+
+    -- * Console Logging
     getConsoleLogs,
     getAvailableLogTypes,
     injectConsoleLogger,
@@ -36,6 +112,7 @@ where
 
 import Control.Exception (Exception)
 import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
+import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
@@ -47,7 +124,7 @@ import qualified Data.Text.Read as TR
 import GHC.Generics (Generic)
 import System.Environment (lookupEnv)
 import qualified Test.WebDriver as WD
-import Test.WebDriver.Commands (LogEntry (..), LogLevel (..), LogType, executeJS, getLogs)
+import Test.WebDriver.Commands (LogEntry (..), LogLevel (..), LogType, executeJS, getLogs, getSource)
 import Test.WebDriver.Session (WDSession (..), getSession)
 import Text.RawString.QQ (r)
 
@@ -120,7 +197,9 @@ createWebDriverConfig browserType opts = do
       baseConfig = case browserType of
         Chrome -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.chrome}}
         Firefox -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.firefox}}
-      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port}
+      -- Increase HTTP response timeout and retry count for CI environments
+      -- This is especially important for JavaScript execution calls like injectConsoleLogger
+      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port, WD.wdHTTPRetryCount = 5}
       chromeCapabilities :: WD.Capabilities
       chromeCapabilities =
         WD.defaultCaps
@@ -129,13 +208,33 @@ createWebDriverConfig browserType opts = do
                 { chromeDriverVersion = mempty,
                   chromeBinary = mempty,
                   chromeOptions =
-                    ["--width=1024", "--height=768"]
+                    ["--width=1024", "--height=768", "--enable-logging"]
                       <> if fromMaybe False (headless opts)
-                        then ["--headless=new", "--no-sandbox", "--disable-gpu"]
+                        then ["--headless=new", "--disable-gpu"]
                         else [],
                   chromeExtensions = mempty,
                   chromeExperimentalOptions = mempty
-                }
+                },
+            WD.additionalCaps =
+              [ ( "goog:loggingPrefs",
+                  [aesonQQ|
+                    {
+                      "browser": "ALL",
+                      "driver": "ALL",
+                      "performance": "ALL"
+                    }
+                  |]
+                ),
+                ( "loggingPrefs",
+                  [aesonQQ|
+                    {
+                      "browser": "ALL",
+                      "driver": "ALL",
+                      "performance": "ALL"
+                    }
+                  |]
+                )
+              ]
           }
   return $ case browserType of
     Chrome ->
@@ -227,15 +326,51 @@ rightClickElement (SeleniumSession _ session) locator timeoutMs = do
   WD.runWD session $ do
     WD.setImplicitWait (fromIntegral timeoutMs)
     element <- WD.findElem (locatorToBy locator)
-    -- Note: contextClick is not available in this webdriver version
-    -- As a workaround, we move to the element
-    WD.moveToCenter element
+    -- Perform right-click using JavaScript since WebDriver doesn't have direct right-click support
+    (_ :: Maybe ()) <-
+      executeJS
+        [WD.JSArg element]
+        [r|
+      var element = arguments[0];
+      var event = new MouseEvent('contextmenu', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        button: 2
+      });
+      element.dispatchEvent(event);
+    |]
+    return ()
 
 -- | Press a key
 pressKey :: SeleniumSession -> T.Text -> IO ()
 pressKey (SeleniumSession _ session) key = do
-  WD.runWD session $
-    WD.sendRawKeys key
+  WD.runWD session $ do
+    -- Use JavaScript to dispatch keyboard events for better compatibility
+    -- This ensures the events are triggered on the document
+    (_ :: Maybe ()) <-
+      executeJS
+        [WD.JSArg key]
+        [r|
+      var key = arguments[0];
+      var event = new KeyboardEvent('keydown', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+      });
+      document.dispatchEvent(event);
+
+      // Also dispatch on the body element for additional compatibility
+      var bodyEvent = new KeyboardEvent('keydown', {
+        key: key,
+        code: key,
+        bubbles: true,
+        cancelable: true
+      });
+      document.body.dispatchEvent(bodyEvent);
+    |]
+    return ()
 
 -- | Upload file to input element
 uploadFileToElement :: SeleniumSession -> LocatorStrategy -> T.Text -> Int -> IO ()
@@ -259,6 +394,8 @@ takeScreenshot (SeleniumSession _ session) outputPath = do
 -- | Get console logs from the browser
 getConsoleLogs :: SeleniumSession -> Maybe T.Text -> Maybe Int -> IO [LogEntry]
 getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
+  -- For console logs, always try "browser" first since that's where JavaScript console messages go
+  -- Even if it's not listed as available, it often still works
   allLogs <- WD.runWD session $ getLogs "browser"
   let filteredLogs = case logLevelFilter of
         Nothing -> allLogs
@@ -270,15 +407,14 @@ getConsoleLogs (SeleniumSession _ session) logLevelFilter maxEntries = do
 
 -- | Get available log types for the current session
 getAvailableLogTypes :: SeleniumSession -> IO [LogType]
-getAvailableLogTypes _ = do
-  -- Since getAvailableLogTypes is not available in this version of webdriver,
-  -- return the common log types that are typically supported
-  return ["browser", "driver", "performance", "server", "client"]
+getAvailableLogTypes (SeleniumSession _ session) = WD.runWD session WD.getLogTypes
 
 -- | Inject JavaScript console logger to capture console messages
-injectConsoleLogger :: SeleniumSession -> IO ()
-injectConsoleLogger (SeleniumSession _ session) = do
+injectConsoleLogger :: SeleniumSession -> Int -> IO ()
+injectConsoleLogger (SeleniumSession _ session) timeoutMs = do
   WD.runWD session $ do
+    -- Set script timeout based on the provided parameter
+    WD.setScriptTimeout (fromIntegral timeoutMs)
     (_ :: Maybe ()) <-
       executeJS
         []
@@ -322,3 +458,8 @@ getInjectedConsoleLogs (SeleniumSession _ session) clearLogs = do
   case result of
     Just s -> return s
     Nothing -> return "[]"
+
+-- | Get the current page source
+getPageSource :: SeleniumSession -> IO T.Text
+getPageSource (SeleniumSession _ session) = do
+  WD.runWD session getSource

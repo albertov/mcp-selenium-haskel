@@ -18,8 +18,12 @@ jobs:
       with:
         name: mcp-selenium-haskell
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-    - name: Build everything
+    - name: Build executable
       run: nix build --accept-flake-config
+    - name: Run checks
+      run: nix flake check
+    - name: Run integration tests
+      run: "nix run .#integration-tests"
     - name: Create Release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -27,4 +31,4 @@ jobs:
         gh release create ${{ github.ref_name }} \
           --title "Release ${{ github.ref_name }}" \
           --notes "$(cat ./CHANGELOG.md)" \
-	  $(readlink -f ./result)
+          mcp-selenium-hs.*.tar.xz
