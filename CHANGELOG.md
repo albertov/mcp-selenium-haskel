@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated integration test scripts to work with new directory structure
 
 ### Fixed
-- All FIXMEs related to Python dependency management in flake.nix
+- Python dependency management in flake.nix by migrating integration tests to writeShellApplication with proper pythonEnv
 - HTML fixtures directory path to work in both development and packaged environments
 - Import issues by creating proper Python package structure
 - Integration test orchestration to use correct paths

@@ -59,37 +59,23 @@
         };
         treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
 
-        #FIXME: Migrate this back to use a writeShellApplication that has the
-        # needed packages in a pythonEnv as runtimeInput. Integration tests need
-        # that
-        integration-tests = pkgs.python3.pkgs.buildPythonApplication {
-          pname = "mcp-selenium-integration-tests";
-          version = "0.1.0";
-          src = self;
-          format = "pyproject";
-
-          build-system = with pkgs.python3.pkgs; [
-            hatchling
+        integration-tests = pkgs.writeShellApplication {
+          name = "mcp-selenium-integration-tests";
+          runtimeInputs = with pkgs; [
+            selenium-server-standalone
+            chromium
+            (python3.withPackages (
+              ps: with ps; [
+                pytest
+                pytest-asyncio
+                mcp
+              ]
+            ))
           ];
-
-          propagatedBuildInputs = with pkgs.python3.pkgs; [
-            pytest
-            pytest-asyncio
-            mcp
-          ];
-
-          nativeBuildInputs = [ pkgs.makeWrapper ];
-
-          postFixup = ''
-            wrapProgram $out/bin/mcp-selenium-integration-tests \
-              --set MCP_SELENIUM_EXE ${self.packages.${system}.mcp-selenium-hs}/bin/mcp-selenium-hs \
-              --prefix PATH : ${
-                pkgs.lib.makeBinPath [
-                  pkgs.selenium-server-standalone
-                  pkgs.chromium
-                ]
-              } \
-              --prefix PYTHONPATH : "$out/${pkgs.python3.sitePackages}:$out/lib/${pkgs.python3.libPrefix}/site-packages"
+          text = ''
+            export MCP_SELENIUM_EXE=${self.packages.${system}.mcp-selenium-hs}/bin/mcp-selenium-hs
+            cd ${self}/integration_tests
+            exec python -m pytest integration "$@"
           '';
         };
       in
