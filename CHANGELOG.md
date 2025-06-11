@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server implementation for browser automation
 - Comprehensive integration test suite with 25+ tests
 - Modern Python packaging with pyproject.toml and hatchling
+
+### Fixed
+- Fixed Chrome logging configuration to properly enable browser logging capabilities
+- Updated integration test expectations to reflect actual Chrome logging behavior where browser logs work even when not reported as available
+- Improved Chrome experimental options configuration using `chromeExperimentalOptions`
 - Configurable timeout parameter for `inject_console_logger` tool (default: 60000ms)
 - Additional integration test demonstrating custom timeout configuration
 - Increased HTTP retry count for improved reliability in CI environments
