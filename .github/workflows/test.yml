@@ -1,4 +1,4 @@
-name: "Test"
+name: Test
 permissions:
   contents: read
 on:
@@ -19,12 +19,6 @@ jobs:
       with:
         name: mcp-selenium-haskell
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-    - name: Debug Cachix setup
-      run: |
-        echo "Token length: ${#CACHIX_AUTH_TOKEN}"
-        echo "Token starts with: \"${CACHIX_AUTH_TOKEN:0:3}\"..."
-      env:
-        CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
     - name: Build everything
       run: nix build --accept-flake-config
     # - name: Run checks
