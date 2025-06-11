@@ -1,4 +1,5 @@
 name: Build and Release
+needs: [test]
 permissions:
   contents: read
 on:
@@ -18,7 +19,7 @@ jobs:
       with:
         name: mcp-selenium-haskell
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-    - name: Build everything
+    - name: Build executable
       run: nix build --accept-flake-config
     - name: Create Release
       env:

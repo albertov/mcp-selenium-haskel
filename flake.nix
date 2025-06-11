@@ -90,7 +90,7 @@
           '';
         };
       in
-      pkgs.lib.recursiveUpdate flake {
+      (pkgs.lib.recursiveUpdate flake {
         legacyPackages = pkgs;
 
         packages = flake.packages // rec {
@@ -105,6 +105,10 @@
         checks = {
           formatting = treefmtEval.config.build.check self;
         };
+      })
+      // {
+        # These require IFD and we don't want that
+        hydraJobs = { };
       }
     );
 
@@ -114,6 +118,5 @@
     extra-trusted-public-keys = [
       "mcp-selenium-haskell.cachix.org-1:C+mSRd39ugTt5+QWvgPRVmGYnHBMFu0+8HW0oW8uA+Y="
     ];
-    allow-import-from-derivation = "true";
   };
 }

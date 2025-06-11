@@ -4,7 +4,9 @@ rec {
   compiler-nix-name = "ghc910"; # Version of GHC to use
   index-state = "2025-06-09T20:31:03Z";
   # This must be updated when haskell dependencies change
-  plan-sha256 = "sha256-jd+Kx7EB4EHPqqguQzjpr7PMhnpCm7Ortpy2Pvq1Oeg=";
+  #plan-sha256 = "sha256-jd+Kx7EB4EHPqqguQzjpr7PMhnpCm7Ortpy2Pvq1Oeg=";
+  checkMaterialization = false;
+  materialized = ./materialized;
 
   # Tools to include in the development shell
   shell.tools.cabal = "latest";
