@@ -33,6 +33,11 @@ version.
 
 You must also scan for any `*.md` documents that may need an update to reflect
 the changes done and update them.
+
+When told to "contiue", or "continue where you left off",... use the
+'branch_log' command to inspect the last commit you made and continue. I may
+have left a commit after yours to help you out, inspect it and take it into
+account.
 """
 
 [commands.format]
