@@ -28,6 +28,24 @@ This document lists identified areas for improvement, missing features, incomple
 - [ ] **Implement element highlighting**: Add functionality to highlight elements before interaction for debugging
 - [ ] **Add viewport/window management**: Functions to resize, maximize, minimize browser windows
 
+#### Missing WebDriver Commands (Not Yet Implemented as Tools)
+The following WebDriver commands are available in `Test.WebDriver.Commands` but not yet implemented as MCP tools:
+- [ ] **Alert handling**: `acceptAlert`, `dismissAlert` - Handle JavaScript alert/confirm dialogs
+- [ ] **Window management**: `maximize`, `setWindowSize`, `getWindowSize` - Window sizing and state control
+- [ ] **Navigation**: `refresh`, `getCurrentURL`, `getTitle` - Additional page navigation and info retrieval
+- [ ] **Element state inspection**: `isSelected`, `isEnabled`, `isDisplayed` - Check element status/visibility
+- [ ] **Element attributes**: `attr` - Get element attributes and properties
+- [ ] **Form operations**: `submit` - Submit forms directly
+- [ ] **JavaScript execution**: `executeJS` tool - Execute arbitrary JavaScript (currently only used internally)
+- [ ] **Element clearing**: Clear text from input elements
+- [ ] **Browser navigation**: Back/forward navigation commands
+- [ ] **Cookie management**: Get/set/delete cookies
+- [ ] **Local storage operations**: Access browser local/session storage
+- [ ] **Frame/window switching**: Switch between frames, tabs, and windows
+- [ ] **Element selection**: Select options in dropdown elements
+
+**Integration tests should be implemented for all new tools with appropriate HTML fixtures to verify functionality**
+
 ### Error Handling and Validation
 - [ ] **Implement specific error types**: Replace generic `SomeException` with domain-specific error types
 - [ ] **Add input validation**: Validate URLs, file paths, timeouts, and other parameters before WebDriver calls
