@@ -104,7 +104,7 @@ For development and debugging, you can run components manually:
 
 ## Test Configuration
 
-The tests are configured via `pytest.ini` and use the following markers:
+The tests use pytest and support the following markers:
 
 - `@pytest.mark.asyncio` - For async tests
 - `@pytest.mark.slow` - For slow-running tests
