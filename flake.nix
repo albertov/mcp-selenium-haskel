@@ -73,7 +73,6 @@
               ]
             ))
           ];
-          checkPhase = ""; # FIXME
           text = ''
             # Create a temporary directory
             TEMP_DIR="$(mktemp -d)"
