@@ -208,7 +208,7 @@ createWebDriverConfig browserType opts = do
                 { chromeDriverVersion = mempty,
                   chromeBinary = mempty,
                   chromeOptions =
-                    ["--width=1024", "--height=768", "--enable-logging", "--log-level=0", "--v=1", "--enable-network-service-logging", "--no-sandbox", "--disable-dev-shm-usage"]
+                    ["--width=1024", "--height=768", "--enable-logging"]
                       <> if fromMaybe False (headless opts)
                         then ["--headless=new", "--disable-gpu"]
                         else [],
