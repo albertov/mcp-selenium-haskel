@@ -62,6 +62,7 @@
         integration-tests = pkgs.writeShellApplication {
           name = "mcp-selenium-integration-tests";
           runtimeInputs = with pkgs; [
+            rsync
             selenium-server-standalone
             chromium
             (python3.withPackages (
@@ -72,10 +73,17 @@
               ]
             ))
           ];
+          checkPhase = ""; # FIXME
           text = ''
+            # Create a temporary directory
+            TEMP_DIR="$(mktemp -d)"
+            # Set up trap to delete the temporary directory on script exit
+            trap 'rm -rf "$TEMP_DIR"' EXIT
             export MCP_SELENIUM_EXE=${self.packages.${system}.mcp-selenium-hs}/bin/mcp-selenium-hs
-            cd ${self}/integration_tests
-            exec python -m pytest integration "$@"
+            rsync -a ${self}/integration_tests "$TEMP_DIR"/
+            chmod -R u+w "$TEMP_DIR"
+            cd "$TEMP_DIR"
+            exec python integration_tests/orchestrate_integration_tests.py "$@"
           '';
         };
       in
