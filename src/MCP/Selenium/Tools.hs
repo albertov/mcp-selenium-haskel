@@ -74,7 +74,6 @@ newtype NavigateParams = NavigateParams
 
 data FindElementParams = FindElementParams
   { by :: Maybe T.Text,
-    strategy :: Maybe T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
@@ -248,7 +247,7 @@ handleNavigate tools params = do
 
 -- | Handle find_element tool
 handleFindElement :: SeleniumTools -> FindElementParams -> IO CallToolResult
-handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal) = do
+handleFindElement tools (FindElementParams byVal valueVal timeoutVal) = do
   hPutStrLn stderr "HANDLER: find_element called" >> hFlush stderr
   sessionMaybe <- readTVarIO (sessionVar tools)
   -- Debug logging
@@ -259,10 +258,7 @@ handleFindElement tools (FindElementParams byVal strategyVal valueVal timeoutVal
     Just session -> do
       catch
         ( do
-            let byStrategy = case (byVal, strategyVal) of
-                  (Just b, _) -> b
-                  (Nothing, Just s) -> s
-                  (Nothing, Nothing) -> "id" -- default
+            let byStrategy = fromMaybe "id" byVal -- default to "id" if not provided
                 locator = parseLocatorStrategy byStrategy valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
             element <- findElementByLocator session locator timeoutMs

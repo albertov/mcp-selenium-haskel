@@ -58,7 +58,7 @@ main = hspec $ do
 
     describe "FindElementParams" $ do
       it "can be encoded and decoded as JSON" $ do
-        let params = FindElementParams (Just "id") Nothing "test-element" (Just 5000)
+        let params = FindElementParams (Just "id") "test-element" (Just 5000)
         decode (encode params) `shouldBe` Just params
 
     describe "ClickElementParams" $ do

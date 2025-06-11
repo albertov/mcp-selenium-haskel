@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory
 - **BREAKING**: Restructured Python package to use proper module naming (underscores)
+- **BREAKING**: Removed `strategy` parameter from `find_element` tool, keeping only `by` parameter for locator strategy
 - Modernized build system from `writeShellApplication` to `buildPythonApplication`
 - Updated from manual dependency management to automatic transitive dependency resolution
 - Converted to modern `format = "pyproject"` with `hatchling` build backend

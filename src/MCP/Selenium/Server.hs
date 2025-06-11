@@ -178,15 +178,10 @@ findElementTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
-          "strategy": {
-            "type": "string",
-            "enum": ["id", "css", "xpath", "name", "tag", "class"],
-            "description": "Locator strategy"
-          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"],
-            "description": "Locator strategy (alternative to strategy)"
+            "description": "Locator strategy"
           },
           "value": {
             "type": "string",
