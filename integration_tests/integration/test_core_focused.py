@@ -36,29 +36,25 @@ class TestCoreFunctionality:
             assert tool in tools, f"Advanced tool {tool} not found in tools: {tools}"
 
     @pytest.mark.asyncio
-    async def test_basic_workflow(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_basic_workflow(self, browser: MCPSeleniumClient, test_server):
         """Test basic browser automation workflow"""
-        # Start browser
-        result = await mcp_client.start_browser("chrome", headless=True)
-        assert "error" not in result
-
         # Navigate
         url = f"{test_server.base_url}/form_page.html"
-        result = await mcp_client.navigate(url)
+        result = await browser.navigate(url)
         assert "error" not in result
 
         # Find and interact with elements
-        result = await mcp_client.find_element("id", "username")
+        result = await browser.find_element("id", "username")
         assert "error" not in result
 
-        result = await mcp_client.send_keys("id", "username", "test")
+        result = await browser.send_keys("id", "username", "test")
         assert "error" not in result
 
-        result = await mcp_client.click_element("id", "username")
+        result = await browser.click_element("id", "username")
         assert "error" not in result
 
         # Get text from element
-        result = await mcp_client.call_tool("get_element_text", {
+        result = await browser.call_tool("get_element_text", {
             "by": "tag",
             "value": "h1",
             "timeout": 10000
@@ -66,18 +62,17 @@ class TestCoreFunctionality:
         assert result["text"] == "Please log in, young grasshopper"
 
         # Take screenshot
-        result = await mcp_client.take_screenshot()
+        result = await browser.take_screenshot()
         assert "error" not in result
 
     @pytest.mark.asyncio
-    async def test_drag_and_drop_correct_params(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_drag_and_drop_correct_params(self, browser: MCPSeleniumClient, test_server):
         """Test drag and drop with correct parameter names"""
-        await mcp_client.start_browser()
         url = f"{test_server.base_url}/test_page.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
         # Test drag and drop with correct parameter structure
-        result = await mcp_client.call_tool("drag_and_drop", {
+        result = await browser.call_tool("drag_and_drop", {
             "by": "id",
             "value": "test-button",
             "targetBy": "tag",
@@ -90,13 +85,12 @@ class TestCoreFunctionality:
                 "success" in result.get("text", "").lower())
 
     @pytest.mark.asyncio
-    async def test_hover_action_correct(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_hover_action_correct(self, browser: MCPSeleniumClient, test_server):
         """Test hover action with correct parameters"""
-        await mcp_client.start_browser()
         url = f"{test_server.base_url}/test_page.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
-        result = await mcp_client.call_tool("hover", {
+        result = await browser.call_tool("hover", {
             "by": "id",
             "value": "test-button",
             "timeout": 10000
@@ -121,26 +115,24 @@ class TestCoreFunctionality:
                    f"Tool {tool_name} should fail without browser"
 
     @pytest.mark.asyncio
-    async def test_nonexistent_element_handling(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_nonexistent_element_handling(self, browser: MCPSeleniumClient, test_server):
         """Test handling of operations on non-existent elements"""
-        await mcp_client.start_browser()
         url = f"{test_server.base_url}/test_page.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
         # Test with short timeout to fail quickly
-        result = await mcp_client.find_element("id", "definitely-does-not-exist", timeout=1)
+        result = await browser.find_element("id", "definitely-does-not-exist", timeout=1)
         assert ("error" in result or
                 "not found" in result.get("text", "").lower() or
                 "element" in result.get("text", "").lower())
 
     @pytest.mark.asyncio
-    async def test_upload_file_if_available(self, mcp_client: MCPSeleniumClient, test_server, sample_file):
+    async def test_upload_file_if_available(self, browser: MCPSeleniumClient, test_server, sample_file):
         """Test file upload if the tool is available"""
-        await mcp_client.start_browser()
         url = f"{test_server.base_url}/upload_page.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
-        result = await mcp_client.call_tool("upload_file", {
+        result = await browser.call_tool("upload_file", {
             "by": "id",
             "value": "file-input",
             "filePath": str(sample_file),

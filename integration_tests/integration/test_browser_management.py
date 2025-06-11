@@ -20,9 +20,13 @@ class TestBrowserManagement:
 
     @pytest.mark.asyncio
     async def test_start_chrome_browser(self, mcp_client: MCPSeleniumClient):
-        """Test starting Chrome browser"""
+        """Test starting Chrome browser with explicit cleanup"""
         result = await mcp_client.start_browser("chrome", headless=True)
 
         assert "error" not in result
         # Check for success indicators
         assert "sessionId" in result or "success" in result or "text" in result
+
+        # Explicitly close the browser session
+        close_result = await mcp_client.close_browser()
+        assert "error" not in close_result

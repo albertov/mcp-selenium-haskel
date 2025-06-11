@@ -146,3 +146,14 @@ class MCPSeleniumClient:
         if element_id:
             args["elementId"] = element_id
         return await self.call_tool("take_screenshot", args)
+
+    async def close_browser(self) -> Dict[str, Any]:
+        """Close the browser session"""
+        if not self.session_id:
+            return {"error": "No active browser session to close."}
+
+        result = await self.call_tool("close_session", {})
+        # Clear session_id after closing
+        if "error" not in result:
+            self.session_id = None
+        return result

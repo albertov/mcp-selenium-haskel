@@ -6,14 +6,11 @@ class TestNavigation:
     """Test URL navigation functionality"""
 
     @pytest.mark.asyncio
-    async def test_navigate_to_valid_url(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_navigate_to_valid_url(self, browser: MCPSeleniumClient, test_server):
         """Test navigation to valid URL"""
-        # Start browser first
-        await mcp_client.start_browser()
-
         # Navigate to test page
         url = f"{test_server.base_url}/test_page.html"
-        result = await mcp_client.navigate(url)
+        result = await browser.navigate(url)
 
         assert "error" not in result
         # Accept various success indicators

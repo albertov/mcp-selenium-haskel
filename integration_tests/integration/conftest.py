@@ -50,3 +50,16 @@ def sample_file(temp_dir):
     file_path = temp_dir / "sample.txt"
     file_path.write_text("This is a test file for upload")
     return file_path
+
+
+@pytest_asyncio.fixture(scope="function")
+async def browser(mcp_client: MCPSeleniumClient) -> AsyncGenerator[MCPSeleniumClient, None]:
+    """Provide a headless chrome browser session to integration tests"""
+    result = await mcp_client.start_browser("chrome", headless=True)
+    if "error" in result:
+        raise RuntimeError(f"Failed to start browser: {result}")
+
+    yield mcp_client
+
+    # Clean up browser session
+    await mcp_client.close_browser()
