@@ -119,7 +119,9 @@
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
     extra-substituters = [ "https://mcp-selenium-haskell.cachix.org" ];
-    extra-trusted-public-keys = [ "mcp-selenium-haskell.cachix.org-1:C+mSRd39ugTt5+QWvgPRVmGYnHBMFu0+8HW0oW8uA+Y=" ];
+    extra-trusted-public-keys = [
+      "mcp-selenium-haskell.cachix.org-1:C+mSRd39ugTt5+QWvgPRVmGYnHBMFu0+8HW0oW8uA+Y="
+    ];
     allow-import-from-derivation = "true";
   };
 }

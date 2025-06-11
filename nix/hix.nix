@@ -3,28 +3,18 @@ rec {
   name = "mcp-selenium-haskell";
   compiler-nix-name = "ghc910"; # Version of GHC to use
 
-  crossPlatforms =
-    p:
-    pkgs.lib.optionals pkgs.stdenv.hostPlatform.isx86_64 (
-      [
-      ]
-      ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-        p.musl64
-      ]
-    );
-
   # Tools to include in the development shell
   shell.tools.cabal = "latest";
   shell.tools.hlint = "latest";
   shell.tools.ormolu = "latest";
   shell.tools.haskell-language-server = "latest";
-  # Add non-Haskell tools to the development shell
+  # Non-Haskell tools to include in the development shell
   shell.nativeBuildInputs =
     with pkgs.buildPackages;
     with python3.pkgs;
     [
-      selenium-server-standalone
       chromium
+      selenium-server-standalone
       python
       pytest
       pytest-asyncio
