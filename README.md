@@ -35,6 +35,8 @@ Both implementations provide identical MCP tool interfaces, but differ in sessio
 - **Node.js**: Implicit session management (one session per server instance)
 - **Haskell**: ✅ **Explicit session management** - Multiple concurrent sessions with proper isolation
 
+FIXME: We offer extra tools, Claude, describe them
+
 ### 🧪 **Testing**
 - **Node.js**: ⚠️ **Basic testing** - Limited test coverage
 - **Haskell**: ✅ **Production-grade testing** - 90+ comprehensive integration tests with black-box validation
