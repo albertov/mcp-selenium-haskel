@@ -72,7 +72,11 @@ class TestGetSource:
         """Test get_source without an active browser session"""
         # Create client without starting browser
         import os
-        executable_path = os.path.join(os.getcwd(), "dist-newstyle/build/x86_64-linux/ghc-9.10.2/mcp-selenium-0.1.0/x/mcp-selenium-hs/build/mcp-selenium-hs/mcp-selenium-hs")
+        from pathlib import Path
+
+        # Use same path determination logic as conftest.py
+        project_root = Path(__file__).parent.parent.parent
+        executable_path = os.environ.get('MCP_SELENIUM_EXE', str(project_root / "run_server.sh"))
 
         async with MCPSeleniumClient(executable_path) as client:
             result = await client.get_source()
