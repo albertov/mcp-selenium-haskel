@@ -30,7 +30,8 @@ When your work is almost ready, you MUST run the 'integration-test' command make
 everything still works. Fix it otherwise
 
 When your work is ready, you MUST:
- - Run a final exhaustive check with the 'nix-integration-test' command
+ - Run a final exhaustive check with the 'nix-integration-test' command. ALL
+   tests MUST pass! We allow no flaky tests here
  - Run the 'changed_files' command to get a list of all the files
    that have been modified in this branch and bump the version and update the
    changelog of all packages that have been modified, not the ones that have been
