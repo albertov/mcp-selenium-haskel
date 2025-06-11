@@ -4,12 +4,12 @@ rec {
   compiler-nix-name = "ghc910"; # Version of GHC to use
 
   crossPlatforms =
-    _p:
+    p:
     pkgs.lib.optionals pkgs.stdenv.hostPlatform.isx86_64 (
       [
       ]
       ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-        # p.musl64
+        p.musl64
       ]
     );
 
@@ -19,12 +19,12 @@ rec {
   shell.tools.ormolu = "latest";
   shell.tools.haskell-language-server = "latest";
   # Add non-Haskell tools to the development shell
-  shell.buildInputs =
-    with pkgs;
+  shell.nativeBuildInputs =
+    with pkgs.buildPackages;
     with python3.pkgs;
     [
-      selenium-server-standalone
-      chromium
+      #selenium-server-standalone
+      #chromium
       python
       pytest
       pytest-asyncio

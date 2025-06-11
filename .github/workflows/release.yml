@@ -1,0 +1,30 @@
+name: Build and Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Setup Cachix cache
+      uses: cachix/cachix-action@v14
+      with:
+        name: mcp-selenium-haskell
+        authToken: ${{ secrets.CACHIX_TOKEN }}
+    - name: Build everything
+      run: nix build --accept-flake-config
+    - name: Create Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create ${{ github.ref_name }} \
+          --title "Release ${{ github.ref_name }}" \
+          --notes "$(cat ./CHANGELOG.md)" \
+	  $(readlink -f ./result)
