@@ -120,7 +120,8 @@ createWebDriverConfig browserType opts = do
       baseConfig = case browserType of
         Chrome -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.chrome}}
         Firefox -> WD.defaultConfig {WD.wdCapabilities = WD.defaultCaps {WD.browser = WD.firefox}}
-      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port}
+      -- Increase HTTP response timeout to 120 seconds (120000000 microseconds)
+      configWithHost = baseConfig {WD.wdHost = hostStr, WD.wdPort = port, WD.wdHTTPRetryCount = 3, WD.wdResponseTimeout = 120000000}
       chromeCapabilities :: WD.Capabilities
       chromeCapabilities =
         WD.defaultCaps
