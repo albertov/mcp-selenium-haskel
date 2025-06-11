@@ -58,21 +58,28 @@
           '';
         };
         treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
+        #FIXME This should be a buildPythonApplication so we don't need to
+        # manually resolve all transitive deps
         integration-tests = pkgs.writeShellApplication {
           name = "mcp-selenium-haskell-integration-test";
           runtimeInputs = with pkgs; [
             selenium-server-standalone
             chromium
+            #FIXME: This should be implicit by buildPythonApplication
             python3
           ];
           text =
             let
+              #FIXME: wtf
               py_path =
                 with pkgs.python3.pkgs;
                 lib.makeSearchPath "lib/python3.12/site-packages" [
                   pytest
                   pytest-asyncio
                   mcp
+                  # FIXME: Remove when migrating to buildPythonApplication
+                  # The rest are all transitive deps that buildPythonApplication
+                  # would've injected for us
                   pluggy
                   iniconfig
                   python-dotenv
@@ -92,6 +99,7 @@
                 ];
             in
             ''
+              #FIXME MCP_SELENIUM_EXE should be injected by makeWrapper
               export MCP_SELENIUM_EXE=${self.packages.${system}.mcp-selenium-hs}/bin/mcp-selenium-hs
               export PYTHONPATH="${self}/tests:${py_path}"
               exec python3 ${self}/orchestrate_integration_tests.py
