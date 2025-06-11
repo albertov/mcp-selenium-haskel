@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import issues by creating proper Python package structure
 - Integration test orchestration to use correct paths
 - Console logger injection timeout issues in CI environments by adding configurable script timeout parameter
+- Integration test compatibility with session management system - updated Python client to automatically handle session_id parameters
+- Integration test start_browser calls to use convenience methods for proper session tracking
 
 ### Changed
 - **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory

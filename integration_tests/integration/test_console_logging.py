@@ -15,19 +15,12 @@ class TestConsoleLogging:
         """Test that console logs can be retrieved from a page with JavaScript errors"""
 
         # Start browser with logging enabled
-        start_result = await mcp_client.call_tool("start_browser", {
-            "browser": "chrome",
-            "options": {
-                "headless": True,
-                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
-            },
-            "enableLogging": True
-        })
+        start_result = await mcp_client.start_browser("chrome", headless=True)
 
         logger.info(f"Browser start result: {start_result}")
         assert "error" not in start_result
-        assert ("logging enabled" in start_result.get("text", "").lower() or
-                "started successfully" in start_result.get("text", "").lower())
+        assert ("logging enabled" in start_result.get("message", "").lower() or
+                "started successfully" in start_result.get("message", "").lower())
 
         # Navigate to the test page with JS errors
         url = f"{test_server.base_url}/test_page_with_js_error.html"
@@ -77,14 +70,7 @@ class TestConsoleLogging:
         """Test injecting console logger and retrieving injected logs"""
 
         # Start browser
-        await mcp_client.call_tool("start_browser", {
-            "browser": "chrome",
-            "options": {
-                "headless": True,
-                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
-            },
-            "enableLogging": True
-        })
+        await mcp_client.start_browser("chrome", headless=True)
 
         # Navigate to the test page
         url = f"{test_server.base_url}/test_page_with_js_error.html"
@@ -146,14 +132,7 @@ class TestConsoleLogging:
         """Test getting available log types"""
 
         # Start browser
-        await mcp_client.call_tool("start_browser", {
-            "browser": "chrome",
-            "options": {
-                "headless": True,
-                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
-            },
-            "enableLogging": True
-        })
+        await mcp_client.start_browser("chrome", headless=True)
 
         # Get available log types
         log_types_result = await mcp_client.call_tool("get_available_log_types", {})
@@ -182,14 +161,7 @@ class TestConsoleLogging:
         """Test console logs with level filtering"""
 
         # Start browser with logging enabled
-        await mcp_client.call_tool("start_browser", {
-            "browser": "chrome",
-            "options": {
-                "headless": True,
-                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
-            },
-            "enableLogging": True
-        })
+        await mcp_client.start_browser("chrome", headless=True)
 
         # Navigate to the test page
         url = f"{test_server.base_url}/test_page_with_js_error.html"
@@ -223,14 +195,7 @@ class TestConsoleLogging:
         """Test injecting console logger with custom timeout parameter"""
 
         # Start browser
-        await mcp_client.call_tool("start_browser", {
-            "browser": "chrome",
-            "options": {
-                "headless": True,
-                "arguments": ["--no-sandbox", "--disable-dev-shm-usage"]
-            },
-            "enableLogging": True
-        })
+        await mcp_client.start_browser("chrome", headless=True)
 
         # Navigate to the test page
         url = f"{test_server.base_url}/test_page_with_js_error.html"

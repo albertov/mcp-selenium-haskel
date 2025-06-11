@@ -13,6 +13,7 @@ class MCPSeleniumClient:
         self.session: Optional[ClientSession] = None
         self._stdio_context_manager = None
         self._session_context_manager = None
+        self.session_id: Optional[str] = None
 
     async def __aenter__(self):
         print(f"DEBUG: Starting MCP client with executable: {self.executable_path}")
@@ -67,6 +68,19 @@ class MCPSeleniumClient:
 
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Call a tool and return the result"""
+        # For tools that require session_id, add it automatically if not present
+        session_required_tools = {
+            "navigate", "find_element", "click_element", "send_keys", "get_element_text",
+            "hover", "drag_and_drop", "double_click", "right_click", "press_key",
+            "upload_file", "take_screenshot", "close_session", "get_console_logs",
+            "get_available_log_types", "inject_console_logger", "get_injected_console_logs"
+        }
+
+        if tool_name in session_required_tools and "session_id" not in arguments:
+            if not self.session_id:
+                return {"error": "No active browser session. Call start_browser() first."}
+            arguments = {**arguments, "session_id": self.session_id}
+
         result = await self.session.call_tool(tool_name, arguments)
 
         # Parse result content
@@ -85,11 +99,17 @@ class MCPSeleniumClient:
             "arguments": []
         }
 
-        return await self.call_tool("start_browser", {
+        result = await self.call_tool("start_browser", {
             "browser": browser,
             "options": options,
             "enableLogging": True
         })
+
+        # Extract and store session_id from result
+        if "sessionId" in result:
+            self.session_id = result["sessionId"]
+
+        return result
 
     async def navigate(self, url: str) -> Dict[str, Any]:
         """Navigate to URL"""
