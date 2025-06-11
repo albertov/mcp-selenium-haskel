@@ -2,6 +2,11 @@
 project_prompt = """
 You MUST always obey the following rules:
 
+When told to "contiue", or "continue where you left off",... use the
+'branch_log' command to inspect the last commit you made and continue. I may
+have left a commit after yours to help you out, inspect it and take it into
+account.
+
 You can use the 'hoogle' command to search for documentation about symbols in
 any external dependency we have available. You should implement functionality
 using existing dependencies when possible.
@@ -24,20 +29,22 @@ You MUST always use explicit import and export lists.
 When your work is almost ready, you MUST run the 'integration-test' command make sure
 everything still works. Fix it otherwise
 
-When your work is ready, you MUST run the 'changed_files' command to get a list of all the files
-that have been modified in this branch and bump the version and update the
-changelog of all packages that have been modified, not the ones that have been
-newly created. Do not do this if the date of the latest entry of the changelog
-is "UNRELEASED". In this case, update the latest entry but do not bump the
-version.
+When your work is ready, you MUST:
+ - Run a final exhaustive check with the 'nix-integration-test' command
+ - Run the 'changed_files' command to get a list of all the files
+   that have been modified in this branch and bump the version and update the
+   changelog of all packages that have been modified, not the ones that have been
+   newly created. Do not do this if the date of the latest entry of the changelog
+   is "UNRELEASED". In this case, update the latest entry but do not bump the
+   version. You must also scan for any `*.md` documents that may need an update to reflect
+   the changes done and update them.
 
-You must also scan for any `*.md` documents that may need an update to reflect
-the changes done and update them.
+"""
 
-When told to "contiue", or "continue where you left off",... use the
-'branch_log' command to inspect the last commit you made and continue. I may
-have left a commit after yours to help you out, inspect it and take it into
-account.
+[commands.check_flake]
+command = ["timeout", "120s", "nix", "flake", "check"]
+doc = """
+Do a check of the project.
 """
 
 [commands.format]
@@ -49,8 +56,8 @@ command = ["./run_integration_tests.sh"]
 doc = """
 Runs the integration tests. This command does not accept arguments
 
-The tests run with a 90 second timeout (do not change this). If you see this
-command is killed then this is the reason.
+The tests run with a timeout (do not change this). If you see this
+command is killed then this is the most likely reason.
 """
 
 [commands.nix-update-materialization]
