@@ -10,88 +10,60 @@ This implementation is inspired by the [mcp-selenium project developed by Angie 
 
 This project is a Haskell reimplementation of the original JavaScript [mcp-selenium](https://github.com/angiejones/mcp-selenium) project. Here's an honest comparison between the two implementations:
 
-### 🎯 **Target Audience & Philosophy**
-- **Node.js (Original)**: JavaScript ecosystem, direct WebDriver integration, single-session model
-- **Haskell (This project)**: Production-ready alternative emphasizing type safety, multi-session support, and functional programming benefits
+### Target Audience & Architecture
+- **Node.js**: Direct WebDriver integration, single-session model
+- **Haskell**: Multi-session support with UUID-based session management, connects to Selenium Grid
 
-### 📦 **Installation & Distribution**
-- **Node.js**: ✅ **Currently easier** - Published to npm with `npx` support, one-line installation
-- **Haskell**: ✅ **Zero-dependency deployment** - Statically-linked executable with no runtime dependencies, works anywhere
+### Installation & Dependencies
+- **Node.js**: Published to npm with `npx` support, includes browser management
+- **Haskell**: Statically-linked executable, requires separate Selenium server
 
-### 🚀 **Deployment & Setup**
-- **Node.js**: ✅ **Self-contained** - Built-in browser management, includes Dockerfile with browser dependencies
-- **Haskell**: ⚠️ **External dependencies** - Requires separate Selenium server, but offers more deployment flexibility
-
-### 🏗️ **Architecture**
-- **Node.js**: Direct WebDriver integration, single-session design, browser lifecycle management included
-- **Haskell**: ✅ **Enterprise-ready architecture** - Multi-session support with UUID-based session management, connects to Selenium Grid for scalability
-
-### 🛠️ **Feature Completeness**
-- **Node.js**: ✅ **Mature and stable** - All tools working, stable implementation (v0.1.21)
-- **Haskell**: ✅ **Feature-complete** - All tools implemented and working correctly with comprehensive test coverage
-
-### 📋 **Tool API Comparison**
-Both implementations provide identical MCP tool interfaces, but differ in session management:
+### Features & API
+Both implementations provide identical MCP tool interfaces with these differences:
 - **Node.js**: Implicit session management (one session per server instance)
-- **Haskell**: ✅ **Explicit session management** - Multiple concurrent sessions with proper isolation
+- **Haskell**: Explicit session management with concurrent sessions
 
-FIXME: We offer extra tools, Claude, describe them
+**Additional Tools (Haskell-only):**
+- **Console Logging Suite**: `get_console_logs`, `inject_console_logger`, `get_injected_console_logs`, `get_available_log_types` - comprehensive JavaScript console monitoring
+- **Page Source**: `get_source` - retrieve current page HTML
+- **Session Management**: UUID-based session IDs with proper multi-session isolation
 
-### 🧪 **Testing**
-- **Node.js**: ⚠️ **Basic testing** - Limited test coverage
-- **Haskell**: ✅ **Production-grade testing** - 90+ comprehensive integration tests with black-box validation
+### Testing & Reliability
+- **Node.js**: Basic test coverage
+- **Haskell**: 90+ integration tests with comprehensive validation
 
-### 📚 **Documentation**
-- **Node.js**: ✅ **Excellent user experience** - Extensive README with real-world examples, video demo, clear installation instructions
-- **Haskell**: ✅ **Comprehensive technical docs** - Detailed API documentation, architectural explanations, integration guides
-
-### 🔧 **Development Experience**
-- **Node.js**: ✅ **Familiar ecosystem** - Standard JavaScript tooling, extensive npm ecosystem
-- **Haskell**: ⚠️ **Specialized tooling** - Requires Haskell/Nix knowledge, but offers superior type safety and debugging
-
-### 🏃 **Performance & Reliability**
-- **Node.js**: ✅ **Proven in production** - Stable, used in real-world applications
-- **Haskell**: ✅ **Built for reliability** - Type safety prevents runtime errors, statically-linked binary, comprehensive test coverage ensures production readiness
-
-### 🌍 **Community & Ecosystem**
-- **Node.js**: ✅ **Established community** - Smithery integration, Claude Desktop examples, active user base
-- **Haskell**: 🚧 **Growing adoption** - Building production user base, enterprise-focused features
-
-### 💡 **When to Choose Which**
-
+### When to Choose Which
 **Choose Node.js mcp-selenium if you:**
-- Want the quickest path to browser automation
-- Prefer JavaScript ecosystem and tooling
-- Need immediate production deployment
-- Want community-proven stability
-- Prefer built-in browser management
+- Want the quickest setup with built-in browser management
+- Prefer the JavaScript ecosystem
+- Need a single browser session
 
 **Choose Haskell mcp-selenium if you:**
-- Need multi-session browser automation
-- Value type safety and compile-time error prevention
-- Want to integrate with existing Selenium Grid infrastructure
-- Prefer statically-linked, dependency-free executables
-- Need enterprise-grade session management and testing
+- Need multiple concurrent browser sessions
+- Want type safety and compile-time error checking
+- Have existing Selenium Grid infrastructure
+- Prefer zero-dependency executables
 
-### 🎯 **Current Status**
-Both implementations are now **production-ready** with different strengths. The **Node.js implementation** offers the quickest path to deployment with its mature ecosystem and simpler setup process. Our **Haskell implementation** provides superior architecture for enterprise use cases with multi-session support, type safety, and comprehensive testing.
+### Current Status
+Both implementations are production-ready with different strengths:
 
-**For immediate production use**: Both implementations are suitable - choose based on your ecosystem preferences
-**For enterprise/multi-session requirements**: Haskell mcp-selenium is the optimal choice
-**For future-proof architecture**: Haskell mcp-selenium offers superior long-term maintainability and reliability
+- **Node.js**: Faster setup, mature ecosystem, simpler deployment
+- **Haskell**: Multi-session support, type safety, extensive test coverage
+
+Choose based on your technical requirements and ecosystem preferences.
 
 ## Features
 
-- Start browser sessions with customizable options
-- Navigate to URLs and interact with page elements
-- Find elements using various locator strategies
-- Click, type, and interact with elements
-- Perform mouse actions (hover, drag and drop)
-- Take screenshots
-- Support for headless mode
-- Console logs functionality
-- Support for Chrome and Firefox browsers
-- Statically linked executable, so it's relatively small and works anywhere.
+- Multi-session browser management with UUID-based session IDs
+- Element interaction: click, type, hover, drag & drop, double-click, right-click
+- Element location using CSS selectors, XPath, ID, name, class, tag
+- JavaScript console logging with injection and monitoring capabilities
+- Screenshot capture and page source retrieval
+- File upload support
+- Keyboard input simulation
+- Chrome and Firefox browser support
+- Headless mode operation
+- Statically-linked executable with zero runtime dependencies
 
 ## API Documentation
 
