@@ -7,6 +7,8 @@
 -- | MCP Tools for Selenium browser automation
 module MCP.Selenium.Tools
   ( SeleniumTools (..),
+    SessionId,
+    SessionData (..),
     StartBrowserParams (..),
     NavigateParams (..),
     FindElementParams (..),
@@ -26,6 +28,10 @@ module MCP.Selenium.Tools
     InjectConsoleLoggerParams (..),
     GetInjectedConsoleLogsParams (..),
     createSeleniumTools,
+    generateSessionId,
+    lookupSession,
+    insertSession,
+    removeSession,
     handleStartBrowser,
     handleNavigate,
     handleFindElement,
@@ -47,17 +53,36 @@ module MCP.Selenium.Tools
   )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar, newTVarIO, readTVarIO)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, encode, object, parseJSON, toJSON, (.=))
+import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON, (.=))
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.HashMap.Strict as HashMap
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import Data.UUID (UUID)
+import qualified Data.UUID as UUID
+import qualified Data.UUID.V4 as UUID4
 import GHC.Generics (Generic)
 import MCP.Selenium.Utils (debugLog)
 import MCP.Selenium.WebDriver
 import Network.MCP.Types (CallToolResult (..), ToolContent (..), ToolContentType (..))
+
+-- | Session management types
+type SessionId = UUID
+
+data SessionData = SessionData
+  { sessionKey :: SessionId,
+    seleniumSession :: SeleniumSession
+  }
+  deriving (Generic)
+
+instance Show SessionData where
+  show (SessionData sessKey _) = "SessionData { sessionKey = " ++ show sessKey ++ " }"
+
+instance Eq SessionData where
+  (SessionData key1 _) == (SessionData key2 _) = key1 == key2
 
 -- | Tool parameter types
 data StartBrowserParams = StartBrowserParams
@@ -67,27 +92,31 @@ data StartBrowserParams = StartBrowserParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype NavigateParams = NavigateParams
-  { url :: T.Text
+data NavigateParams = NavigateParams
+  { session_id :: SessionId,
+    url :: T.Text
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data FindElementParams = FindElementParams
-  { by :: Maybe T.Text,
+  { session_id :: SessionId,
+    by :: Maybe T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data ClickElementParams = ClickElementParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data SendKeysParams = SendKeysParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     text :: T.Text,
     timeout :: Maybe Int
@@ -95,21 +124,24 @@ data SendKeysParams = SendKeysParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data GetElementTextParams = GetElementTextParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data HoverParams = HoverParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data DragAndDropParams = DragAndDropParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     targetBy :: T.Text,
     targetValue :: T.Text,
@@ -118,26 +150,30 @@ data DragAndDropParams = DragAndDropParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data DoubleClickParams = DoubleClickParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data RightClickParams = RightClickParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype PressKeyParams = PressKeyParams
-  { key :: T.Text
+data PressKeyParams = PressKeyParams
+  { session_id :: SessionId,
+    key :: T.Text
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data UploadFileParams = UploadFileParams
-  { by :: T.Text,
+  { session_id :: SessionId,
+    by :: T.Text,
     value :: T.Text,
     filePath :: T.Text,
     timeout :: Maybe Int
@@ -145,43 +181,43 @@ data UploadFileParams = UploadFileParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data TakeScreenshotParams = TakeScreenshotParams
-  deriving (Eq, Show, Generic, ToJSON)
-
-instance FromJSON TakeScreenshotParams where
-  parseJSON _ = pure TakeScreenshotParams
+  { session_id :: SessionId
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data CloseSessionParams = CloseSessionParams
-  deriving (Eq, Show, Generic, ToJSON)
-
-instance FromJSON CloseSessionParams where
-  parseJSON _ = pure CloseSessionParams
+  { session_id :: SessionId
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- Console logging parameter types
 data GetConsoleLogsParams = GetConsoleLogsParams
-  { logLevel :: Maybe T.Text,
+  { session_id :: SessionId,
+    logLevel :: Maybe T.Text,
     maxEntries :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data GetAvailableLogTypesParams = GetAvailableLogTypesParams
-  deriving (Eq, Show, Generic, ToJSON)
-
-instance FromJSON GetAvailableLogTypesParams where
-  parseJSON _ = pure GetAvailableLogTypesParams
-
-newtype InjectConsoleLoggerParams = InjectConsoleLoggerParams
-  { timeout :: Maybe Int
+  { session_id :: SessionId
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-newtype GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
-  { clear :: Maybe Bool
+data InjectConsoleLoggerParams = InjectConsoleLoggerParams
+  { session_id :: SessionId,
+    timeout :: Maybe Int
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
+  { session_id :: SessionId,
+    clear :: Maybe Bool
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Selenium tools container
 newtype SeleniumTools = SeleniumTools
-  { sessionVar :: TVar (Maybe SeleniumSession)
+  { sessionsVar :: TVar (HashMap.HashMap SessionId SessionData)
   }
 
 -- | Parse locator strategy from text
@@ -204,6 +240,23 @@ errorResult :: T.Text -> CallToolResult
 errorResult msg =
   CallToolResult [ToolContent TextualContent (Just msg)] True
 
+-- | Session management helper functions
+lookupSession :: SeleniumTools -> SessionId -> IO (Maybe SessionData)
+lookupSession tools searchKey = do
+  sessions <- readTVarIO (sessionsVar tools)
+  return $ HashMap.lookup searchKey sessions
+
+insertSession :: SeleniumTools -> SessionId -> SessionData -> IO ()
+insertSession tools insertKey sessionData = do
+  atomically $ modifyTVar (sessionsVar tools) (HashMap.insert insertKey sessionData)
+
+removeSession :: SeleniumTools -> SessionId -> IO ()
+removeSession tools removeKey = do
+  atomically $ modifyTVar (sessionsVar tools) (HashMap.delete removeKey)
+
+generateSessionId :: IO SessionId
+generateSessionId = UUID4.nextRandom
+
 -- | Handle start_browser tool
 handleStartBrowser :: SeleniumTools -> StartBrowserParams -> IO CallToolResult
 handleStartBrowser tools (StartBrowserParams browserVal optionsVal enableLoggingVal) = do
@@ -214,16 +267,21 @@ handleStartBrowser tools (StartBrowserParams browserVal optionsVal enableLogging
         Just opts -> opts {MCP.Selenium.WebDriver.enableLogging = Just loggingEnabled}
   catch
     ( do
-        readTVarIO (sessionVar tools) >>= \case
-          Just oldSession -> closeSeleniumSession oldSession
-          Nothing -> pure ()
         session <- initializeSession browserVal finalOpts
-        atomically $ writeTVar (sessionVar tools) (Just session)
-        let message =
-              if loggingEnabled
-                then "Browser " <> T.pack (show browserVal) <> " started successfully with logging enabled"
-                else "Browser " <> T.pack (show browserVal) <> " started successfully"
-        return $ successResult message
+        newSessionId <- generateSessionId
+        let sessionData = SessionData newSessionId session
+        insertSession tools newSessionId sessionData
+        let sessionIdText = T.pack $ UUID.toString newSessionId
+            responseJson =
+              object
+                [ "sessionId" .= sessionIdText,
+                  "browser" .= show browserVal,
+                  "success" .= True,
+                  "message" .= ("Browser " <> T.pack (show browserVal) <> " started successfully" :: T.Text)
+                ]
+            responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+        debugLog $ "HANDLER: Created session with ID: " ++ UUID.toString newSessionId
+        return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
     )
     ( \e -> do
         return $ errorResult $ "Failed to start browser: " <> T.pack (show (e :: SomeException))
@@ -231,38 +289,37 @@ handleStartBrowser tools (StartBrowserParams browserVal optionsVal enableLogging
 
 -- | Handle navigate tool
 handleNavigate :: SeleniumTools -> NavigateParams -> IO CallToolResult
-handleNavigate tools params = do
+handleNavigate tools (NavigateParams sessId urlVal) = do
   debugLog "HANDLER: navigate called"
-  sessionMaybe <- readTVarIO (sessionVar tools)
+  sessionMaybe <- lookupSession tools sessId
   case sessionMaybe of
     Nothing -> do
-      debugLog "HANDLER: No session in navigate"
-      return $ errorResult "No active browser session"
-    Just session ->
+      debugLog "HANDLER: Session not found in navigate"
+      return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
-            navigateToUrl session (url params)
-            return $ successResult $ "Navigated to " <> url params
+            navigateToUrl (seleniumSession sessionData) urlVal
+            return $ successResult $ "Navigated to " <> urlVal
         )
         (\e -> return $ errorResult $ "Navigation failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle find_element tool
 handleFindElement :: SeleniumTools -> FindElementParams -> IO CallToolResult
-handleFindElement tools (FindElementParams byVal valueVal timeoutVal) = do
+handleFindElement tools (FindElementParams sessId byVal valueVal timeoutVal) = do
   debugLog "HANDLER: find_element called"
-  sessionMaybe <- readTVarIO (sessionVar tools)
-  -- Debug logging
+  sessionMaybe <- lookupSession tools sessId
   case sessionMaybe of
     Nothing -> do
-      debugLog "HANDLER: No session in find_element"
-      return $ errorResult "No active browser session"
-    Just session -> do
+      debugLog "HANDLER: Session not found in find_element"
+      return $ errorResult "Session not found"
+    Just sessionData -> do
       catch
         ( do
             let byStrategy = fromMaybe "id" byVal -- default to "id" if not provided
                 locator = parseLocatorStrategy byStrategy valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            element <- findElementByLocator session locator timeoutMs
+            element <- findElementByLocator (seleniumSession sessionData) locator timeoutMs
             -- Return element information with proper JSON encoding
             let elementIdText = T.pack (show element)
                 responseJson = object [("elementId", toJSON elementIdText), ("found", toJSON True)]
@@ -275,81 +332,81 @@ handleFindElement tools (FindElementParams byVal valueVal timeoutVal) = do
 
 -- | Handle click_element tool
 handleClickElement :: SeleniumTools -> ClickElementParams -> IO CallToolResult
-handleClickElement tools (ClickElementParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleClickElement tools (ClickElementParams sessionId byVal valueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            clickElement session locator timeoutMs
+            clickElement (seleniumSession sessionData) locator timeoutMs
             return $ successResult $ "Clicked element with " <> byVal <> "='" <> valueVal <> "'"
         )
         (\e -> return $ errorResult $ "Click failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle send_keys tool
 handleSendKeys :: SeleniumTools -> SendKeysParams -> IO CallToolResult
-handleSendKeys tools (SendKeysParams byVal valueVal textVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleSendKeys tools (SendKeysParams sessionId byVal valueVal textVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            sendKeysToElement session locator textVal timeoutMs
+            sendKeysToElement (seleniumSession sessionData) locator textVal timeoutMs
             return $ successResult $ "Sent keys to element with " <> byVal <> "='" <> valueVal <> "'"
         )
         (\e -> return $ errorResult $ "Send keys failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle get_element_text tool
 handleGetElementText :: SeleniumTools -> GetElementTextParams -> IO CallToolResult
-handleGetElementText tools (GetElementTextParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleGetElementText tools (GetElementTextParams sessionId byVal valueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            elementText <- getElementText session locator timeoutMs
+            elementText <- getElementText (seleniumSession sessionData) locator timeoutMs
             return $ successResult elementText
         )
         (\e -> return $ errorResult $ "Get text failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle hover tool
 handleHover :: SeleniumTools -> HoverParams -> IO CallToolResult
-handleHover tools (HoverParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleHover tools (HoverParams sessionId byVal valueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            hoverElement session locator timeoutMs
+            hoverElement (seleniumSession sessionData) locator timeoutMs
             return $ successResult $ "Hovered over element with " <> byVal <> "='" <> valueVal <> "'"
         )
         (\e -> return $ errorResult $ "Hover failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle drag_and_drop tool
 handleDragAndDrop :: SeleniumTools -> DragAndDropParams -> IO CallToolResult
-handleDragAndDrop tools (DragAndDropParams byVal valueVal targetByVal targetValueVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleDragAndDrop tools (DragAndDropParams sessionId byVal valueVal targetByVal targetValueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let sourceLocator = parseLocatorStrategy byVal valueVal
                 targetLocator = parseLocatorStrategy targetByVal targetValueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            dragAndDropElements session sourceLocator targetLocator timeoutMs
+            dragAndDropElements (seleniumSession sessionData) sourceLocator targetLocator timeoutMs
             return $
               successResult $
                 "Dragged element from "
@@ -366,62 +423,62 @@ handleDragAndDrop tools (DragAndDropParams byVal valueVal targetByVal targetValu
 
 -- | Handle double_click tool
 handleDoubleClick :: SeleniumTools -> DoubleClickParams -> IO CallToolResult
-handleDoubleClick tools (DoubleClickParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleDoubleClick tools (DoubleClickParams sessionId byVal valueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            doubleClickElement session locator timeoutMs
+            doubleClickElement (seleniumSession sessionData) locator timeoutMs
             return $ successResult $ "Double-clicked element with " <> byVal <> "='" <> valueVal <> "'"
         )
         (\e -> return $ errorResult $ "Double click failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle right_click tool
 handleRightClick :: SeleniumTools -> RightClickParams -> IO CallToolResult
-handleRightClick tools (RightClickParams byVal valueVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleRightClick tools (RightClickParams sessionId byVal valueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            rightClickElement session locator timeoutMs
+            rightClickElement (seleniumSession sessionData) locator timeoutMs
             return $ successResult $ "Right-clicked element with " <> byVal <> "='" <> valueVal <> "'"
         )
         (\e -> return $ errorResult $ "Right click failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle press_key tool
 handlePressKey :: SeleniumTools -> PressKeyParams -> IO CallToolResult
-handlePressKey tools (PressKeyParams keyVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handlePressKey tools (PressKeyParams sessionId keyVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
-            pressKey session keyVal
+            pressKey (seleniumSession sessionData) keyVal
             return $ successResult $ "Pressed key: " <> keyVal
         )
         (\e -> return $ errorResult $ "Press key failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle upload_file tool
 handleUploadFile :: SeleniumTools -> UploadFileParams -> IO CallToolResult
-handleUploadFile tools (UploadFileParams byVal valueVal filePathVal timeoutVal) = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleUploadFile tools (UploadFileParams sessionId byVal valueVal filePathVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let locator = parseLocatorStrategy byVal valueVal
                 timeoutMs = fromMaybe 10000 timeoutVal
-            uploadFileToElement session locator filePathVal timeoutMs
+            uploadFileToElement (seleniumSession sessionData) locator filePathVal timeoutMs
             return $
               successResult $
                 "Uploaded file "
@@ -436,47 +493,47 @@ handleUploadFile tools (UploadFileParams byVal valueVal filePathVal timeoutVal) 
 
 -- | Handle take_screenshot tool
 handleTakeScreenshot :: SeleniumTools -> TakeScreenshotParams -> IO CallToolResult
-handleTakeScreenshot tools TakeScreenshotParams = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleTakeScreenshot tools (TakeScreenshotParams sessionId) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ errorResult "No active browser session"
-    Just session ->
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
-            result <- takeScreenshot session Nothing
+            result <- takeScreenshot (seleniumSession sessionData) Nothing
             return $ successResult $ "Screenshot captured: " <> result
         )
         (\e -> return $ errorResult $ "Screenshot failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle close_session tool
 handleCloseSession :: SeleniumTools -> CloseSessionParams -> IO CallToolResult
-handleCloseSession tools _ = do
-  sessionMaybe <- readTVarIO (sessionVar tools)
+handleCloseSession tools (CloseSessionParams sessionId) = do
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
-    Nothing -> return $ successResult "No active session to close"
-    Just session ->
+    Nothing -> return $ successResult "Session not found or already closed"
+    Just sessionData ->
       catch
         ( do
-            closeSeleniumSession session
-            atomically $ writeTVar (sessionVar tools) Nothing
+            closeSeleniumSession (seleniumSession sessionData)
+            removeSession tools sessionId
             return $ successResult "Browser session closed successfully"
         )
         (\e -> return $ errorResult $ "Close session failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle get_console_logs tool
 handleGetConsoleLogs :: SeleniumTools -> GetConsoleLogsParams -> IO CallToolResult
-handleGetConsoleLogs tools (GetConsoleLogsParams logLevelVal maxEntriesVal) = do
+handleGetConsoleLogs tools (GetConsoleLogsParams sessionId logLevelVal maxEntriesVal) = do
   debugLog "HANDLER: get_console_logs called"
-  sessionMaybe <- readTVarIO (sessionVar tools)
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
     Nothing -> do
-      debugLog "HANDLER: No session in get_console_logs"
-      return $ errorResult "No active browser session"
-    Just session ->
+      debugLog "HANDLER: Session not found in get_console_logs"
+      return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             debugLog "HANDLER: Getting logs from WebDriver"
-            logs <- getConsoleLogs session logLevelVal maxEntriesVal
+            logs <- getConsoleLogs (seleniumSession sessionData) logLevelVal maxEntriesVal
             debugLog ("HANDLER: Got " ++ show (length logs) ++ " log entries")
             let formattedLogs =
                   map
@@ -499,18 +556,18 @@ handleGetConsoleLogs tools (GetConsoleLogsParams logLevelVal maxEntriesVal) = do
 
 -- | Handle get_available_log_types tool
 handleGetAvailableLogTypes :: SeleniumTools -> GetAvailableLogTypesParams -> IO CallToolResult
-handleGetAvailableLogTypes tools _ = do
+handleGetAvailableLogTypes tools (GetAvailableLogTypesParams sessionId) = do
   debugLog "HANDLER: get_available_log_types called"
-  sessionMaybe <- readTVarIO (sessionVar tools)
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
     Nothing -> do
-      debugLog "HANDLER: No session in get_available_log_types"
-      return $ errorResult "No active browser session"
-    Just session ->
+      debugLog "HANDLER: Session not found in get_available_log_types"
+      return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             debugLog "HANDLER: Getting log types from WebDriver"
-            logTypes <- getAvailableLogTypes session
+            logTypes <- getAvailableLogTypes (seleniumSession sessionData)
             debugLog ("HANDLER: Got log types: " ++ show logTypes)
             let responseText = TE.decodeUtf8 $ BSL.toStrict $ encode $ object ["logTypes" .= logTypes]
             debugLog ("HANDLER: Returning log types response: " ++ T.unpack responseText)
@@ -523,19 +580,19 @@ handleGetAvailableLogTypes tools _ = do
 
 -- | Handle inject_console_logger tool
 handleInjectConsoleLogger :: SeleniumTools -> InjectConsoleLoggerParams -> IO CallToolResult
-handleInjectConsoleLogger tools (InjectConsoleLoggerParams timeoutVal) = do
+handleInjectConsoleLogger tools (InjectConsoleLoggerParams sessionId timeoutVal) = do
   debugLog "HANDLER: inject_console_logger called"
-  sessionMaybe <- readTVarIO (sessionVar tools)
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
     Nothing -> do
-      debugLog "HANDLER: No session in inject_console_logger"
-      return $ errorResult "No active browser session"
-    Just session ->
+      debugLog "HANDLER: Session not found in inject_console_logger"
+      return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             debugLog "HANDLER: Injecting console logger"
             let timeoutMs = fromMaybe 60000 timeoutVal -- Default to 60 seconds
-            injectConsoleLogger session timeoutMs
+            injectConsoleLogger (seleniumSession sessionData) timeoutMs
             debugLog "HANDLER: Console logger injected successfully"
             return $ successResult "Console logger injected successfully"
         )
@@ -546,19 +603,19 @@ handleInjectConsoleLogger tools (InjectConsoleLoggerParams timeoutVal) = do
 
 -- | Handle get_injected_console_logs tool
 handleGetInjectedConsoleLogs :: SeleniumTools -> GetInjectedConsoleLogsParams -> IO CallToolResult
-handleGetInjectedConsoleLogs tools (GetInjectedConsoleLogsParams clearVal) = do
+handleGetInjectedConsoleLogs tools (GetInjectedConsoleLogsParams sessionId clearVal) = do
   debugLog "HANDLER: get_injected_console_logs called"
-  sessionMaybe <- readTVarIO (sessionVar tools)
+  sessionMaybe <- lookupSession tools sessionId
   case sessionMaybe of
     Nothing -> do
-      debugLog "HANDLER: No session in get_injected_console_logs"
-      return $ errorResult "No active browser session"
-    Just session ->
+      debugLog "HANDLER: Session not found in get_injected_console_logs"
+      return $ errorResult "Session not found"
+    Just sessionData ->
       catch
         ( do
             let shouldClear = fromMaybe False clearVal
             debugLog ("HANDLER: Getting injected logs, clear=" ++ show shouldClear)
-            logsJson <- getInjectedConsoleLogs session shouldClear
+            logsJson <- getInjectedConsoleLogs (seleniumSession sessionData) shouldClear
             debugLog ("HANDLER: Got injected logs: " ++ T.unpack logsJson)
             return $ successResult logsJson
         )
@@ -570,6 +627,6 @@ handleGetInjectedConsoleLogs tools (GetInjectedConsoleLogsParams clearVal) = do
 -- | Create selenium tools instance
 createSeleniumTools :: IO SeleniumTools
 createSeleniumTools = do
-  sessionState <- newTVarIO Nothing
-  debugLog "Creating SeleniumTools instance"
-  return $ SeleniumTools sessionState
+  sessionsState <- newTVarIO HashMap.empty
+  debugLog "Creating SeleniumTools instance with session management"
+  return $ SeleniumTools sessionsState

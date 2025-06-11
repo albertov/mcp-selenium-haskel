@@ -35,7 +35,17 @@ createSeleniumServer = do
             toolsCapability = Just (ToolsCapability True),
             promptsCapability = Nothing
           }
-      instructions = "Selenium WebDriver automation server for browser automation tasks"
+      instructions =
+        "Selenium WebDriver automation server for browser automation tasks.\n\n"
+          <> "SESSION MANAGEMENT PROTOCOL:\n"
+          <> "1. Start a session: Call 'start_browser' tool to get a session_id\n"
+          <> "2. Use session_id: All subsequent tools require the session_id parameter\n"
+          <> "3. Close session: Call 'close_session' with session_id to cleanup\n\n"
+          <> "WORKFLOW:\n"
+          <> "- start_browser → returns session_id\n"
+          <> "- navigate, find_element, click_element, etc. → require session_id\n"
+          <> "- close_session → cleanup with session_id\n\n"
+          <> "Multiple sessions can be active simultaneously with different session_ids."
 
   server <- createServer serverInfo serverCapabilities instructions
 
@@ -154,12 +164,16 @@ navigateTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "url": {
             "type": "string",
             "description": "URL to navigate to"
           }
         },
-        "required": ["url"]
+        "required": ["session_id", "url"]
       }|]
     }
 
@@ -172,6 +186,10 @@ findElementTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"],
@@ -187,7 +205,7 @@ findElementTool =
             "default": 10000
           }
         },
-        "required": ["value"]
+        "required": ["session_id", "value"]
       }|]
     }
 
@@ -200,6 +218,10 @@ clickElementTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -212,7 +234,7 @@ clickElementTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -225,6 +247,10 @@ sendKeysTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -241,7 +267,7 @@ sendKeysTool =
             "default": 10000
           }
         },
-        "required": ["by", "value", "text"]
+        "required": ["session_id", "by", "value", "text"]
       }|]
     }
 
@@ -254,6 +280,10 @@ getElementTextTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -266,7 +296,7 @@ getElementTextTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -279,6 +309,10 @@ hoverTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -291,7 +325,7 @@ hoverTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -304,6 +338,10 @@ dragAndDropTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -323,7 +361,7 @@ dragAndDropTool =
             "default": 10000
           }
         },
-        "required": ["by", "value", "targetBy", "targetValue"]
+        "required": ["session_id", "by", "value", "targetBy", "targetValue"]
       }|]
     }
 
@@ -336,6 +374,10 @@ doubleClickTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -348,7 +390,7 @@ doubleClickTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -361,6 +403,10 @@ rightClickTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -373,7 +419,7 @@ rightClickTool =
             "default": 10000
           }
         },
-        "required": ["by", "value"]
+        "required": ["session_id", "by", "value"]
       }|]
     }
 
@@ -386,12 +432,16 @@ pressKeyTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "key": {
             "type": "string",
             "description": "Key to press (e.g., 'Enter', 'Tab', 'a', etc.)"
           }
         },
-        "required": ["key"]
+        "required": ["session_id", "key"]
       }|]
     }
 
@@ -404,6 +454,10 @@ uploadFileTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "by": {
             "type": "string",
             "enum": ["id", "css", "xpath", "name", "tag", "class"]
@@ -420,7 +474,7 @@ uploadFileTool =
             "default": 10000
           }
         },
-        "required": ["by", "value", "filePath"]
+        "required": ["session_id", "by", "value", "filePath"]
       }|]
     }
 
@@ -433,11 +487,16 @@ takeScreenshotTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "outputPath": {
             "type": "string",
             "description": "Path where to save the screenshot. If not provided, returns base64 data."
           }
-        }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -448,7 +507,14 @@ closeSessionTool =
       toolDescription = Just "Closes the current browser session and cleans up resources",
       toolInputSchema =
         [aesonQQ|{
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -461,6 +527,10 @@ getConsoleLogsTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "logLevel": {
             "type": "string",
             "enum": ["ALL", "SEVERE", "WARNING", "INFO", "DEBUG"],
@@ -470,7 +540,8 @@ getConsoleLogsTool =
             "type": "number",
             "description": "Maximum number of log entries to return"
           }
-        }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -481,7 +552,14 @@ getAvailableLogTypesTool =
       toolDescription = Just "Retrieves the available log types supported by the current browser",
       toolInputSchema =
         [aesonQQ|{
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -494,12 +572,17 @@ injectConsoleLoggerTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "timeout": {
             "type": "number",
             "description": "Script execution timeout in milliseconds (default: 60000)",
             "default": 60000
           }
-        }
+        },
+        "required": ["session_id"]
       }|]
     }
 
@@ -512,11 +595,16 @@ getInjectedConsoleLogsTool =
         [aesonQQ|{
         "type": "object",
         "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
           "clear": {
             "type": "boolean",
             "description": "Clear the captured logs after retrieving them (default: false)"
           }
-        }
+        },
+        "required": ["session_id"]
       }|]
     }
 

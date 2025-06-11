@@ -2,24 +2,29 @@
 project_prompt = """
 You MUST always obey the following rules:
 
-You MUST always run the 'lint' tool on every Haskell file you modify and fix ALL the warnings
-and errors it reports.
-
 You can use the 'hoogle' command to search for documentation about symbols in
 any external dependency we have available. You should implement functionality
 using existing dependencies when possible.
 
-
 When editing cabal files, do not add version bounds to packages.
 
-You MUST always run the 'test' tool on every package you modify and fix any errors.
+You MUST always run the 'test' command on every package you modify and fix any
+errors. Do this after every edit that affects haskell code and fix errors before
+proceeding.
+
+When implementing new functions, first get the type signatures right leaving the
+body as `error "function foo has not been implemented yet"`. Check with the
+`test` command that everything compiles after every edit.
+
+You MUST always run the 'lint' command on every Haskell file after every testing
+your edits and fix ALL the warnings and errors it reports.
 
 You MUST always use explicit import and export lists.
 
-When your work is almost ready, you MUST run the 'integration-test' tool make sure
+When your work is almost ready, you MUST run the 'integration-test' command make sure
 everything still works. Fix it otherwise
 
-When your work is ready, you MUST run the 'changed_files' tool to get a list of all the files
+When your work is ready, you MUST run the 'changed_files' command to get a list of all the files
 that have been modified in this branch and bump the version and update the
 changelog of all packages that have been modified, not the ones that have been
 newly created. Do not do this if the date of the latest entry of the changelog
