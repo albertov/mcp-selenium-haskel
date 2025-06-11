@@ -105,7 +105,11 @@ set of packages.
 
 [commands.lint]
 command = ["hlint"]
-doc = "Run hlint on the file passed as argument to report errors"
+doc = """
+Run hlint on the file or directory passed as argument to report errors
+
+When asked to lint every haskell file just call it like "lint ."
+"""
 
 [commands.branch_diff]
 command = ["./run_branch_diff.sh"]
