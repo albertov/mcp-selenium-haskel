@@ -20,6 +20,9 @@ This document lists identified areas for improvement, missing features, incomple
   ```haskell
   -- In WebDriver.hs line 233: contextClick is not available, only moveToCenter
   ```
+- [ ] Add integration test to verify right-click functionality works. Should create a new html fixture with needed JS code to verify correctness
+- [ ] Add integration test to verify hover functinality worksa. Should create a new html fixture with needed JS code to verify correctness
+- [ ] Add integration test to verify drag and drop functionality works. Should create a new html fixture with needed JS code to verify correctness
 - [ ] **Implement actual log type detection**: `getAvailableLogTypes` returns hard-coded list instead of querying WebDriver
 - [ ] **Add missing browser arguments support**: Firefox browser options are not implemented (only Chrome has full options support)
 - [ ] **Implement element highlighting**: Add functionality to highlight elements before interaction for debugging
