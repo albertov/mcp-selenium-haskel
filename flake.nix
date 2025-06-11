@@ -59,6 +59,9 @@
         };
         treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
 
+        #FIXME: Migrate this back to use a writeShellApplication that has the
+        # needed packages in a pythonEnv as runtimeInput. Integration tests need
+        # that
         integration-tests = pkgs.python3.pkgs.buildPythonApplication {
           pname = "mcp-selenium-integration-tests";
           version = "0.1.0";
