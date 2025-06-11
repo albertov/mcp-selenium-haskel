@@ -11,20 +11,12 @@ class TestConsoleLogging:
     """Test console logging functionality"""
 
     @pytest.mark.asyncio
-    async def test_get_console_logs_with_js_errors(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_get_console_logs_with_js_errors(self, browser: MCPSeleniumClient, test_server):
         """Test that console logs can be retrieved from a page with JavaScript errors"""
-
-        # Start browser with logging enabled
-        start_result = await mcp_client.start_browser("chrome", headless=True)
-
-        logger.info(f"Browser start result: {start_result}")
-        assert "error" not in start_result
-        assert ("logging enabled" in start_result.get("message", "").lower() or
-                "started successfully" in start_result.get("message", "").lower())
 
         # Navigate to the test page with JS errors
         url = f"{test_server.base_url}/test_page_with_js_error.html"
-        nav_result = await mcp_client.navigate(url)
+        nav_result = await browser.navigate(url)
 
         logger.info(f"Navigation result: {nav_result}")
         assert "error" not in nav_result
@@ -33,7 +25,7 @@ class TestConsoleLogging:
         time.sleep(2)
 
         # Get console logs
-        logs_result = await mcp_client.call_tool("get_console_logs", {})
+        logs_result = await browser.call_tool("get_console_logs", {})
 
         logger.info(f"Console logs result: {logs_result}")
         assert "error" not in logs_result
@@ -66,18 +58,15 @@ class TestConsoleLogging:
             pytest.fail("No 'logs' field in logs result")
 
     @pytest.mark.asyncio
-    async def test_inject_console_logger_and_get_injected_logs(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_inject_console_logger_and_get_injected_logs(self, browser: MCPSeleniumClient, test_server):
         """Test injecting console logger and retrieving injected logs"""
-
-        # Start browser
-        await mcp_client.start_browser("chrome", headless=True)
 
         # Navigate to the test page
         url = f"{test_server.base_url}/test_page_with_js_error.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
         # Inject console logger
-        inject_result = await mcp_client.call_tool("inject_console_logger", {})
+        inject_result = await browser.call_tool("inject_console_logger", {})
 
         logger.info(f"Inject console logger result: {inject_result}")
         assert "error" not in inject_result
@@ -87,14 +76,14 @@ class TestConsoleLogging:
         time.sleep(2)
 
         # Trigger the button that causes additional errors
-        click_result = await mcp_client.click_element("id", "trigger-error-button")
+        click_result = await browser.click_element("id", "trigger-error-button")
         logger.info(f"Button click result: {click_result}")
 
         # Wait for the error to be logged
         time.sleep(1)
 
         # Get injected console logs
-        injected_logs_result = await mcp_client.call_tool("get_injected_console_logs", {
+        injected_logs_result = await browser.call_tool("get_injected_console_logs", {
             "clear": False
         })
 
@@ -128,14 +117,11 @@ class TestConsoleLogging:
             assert "timestamp" in log, "Injected log entry should have 'timestamp' field"
 
     @pytest.mark.asyncio
-    async def test_get_available_log_types(self, mcp_client: MCPSeleniumClient):
+    async def test_get_available_log_types(self, browser: MCPSeleniumClient):
         """Test getting available log types"""
 
-        # Start browser
-        await mcp_client.start_browser("chrome", headless=True)
-
         # Get available log types
-        log_types_result = await mcp_client.call_tool("get_available_log_types", {})
+        log_types_result = await browser.call_tool("get_available_log_types", {})
 
         logger.info(f"Available log types result: {log_types_result}")
         assert "error" not in log_types_result
@@ -157,21 +143,18 @@ class TestConsoleLogging:
             pytest.fail("No 'logTypes' field in log types result")
 
     @pytest.mark.asyncio
-    async def test_console_logs_with_filter(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_console_logs_with_filter(self, browser: MCPSeleniumClient, test_server):
         """Test console logs with level filtering"""
-
-        # Start browser with logging enabled
-        await mcp_client.start_browser("chrome", headless=True)
 
         # Navigate to the test page
         url = f"{test_server.base_url}/test_page_with_js_error.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
         # Wait for JavaScript errors to occur
         time.sleep(2)
 
         # Get console logs with level filter
-        logs_result = await mcp_client.call_tool("get_console_logs", {
+        logs_result = await browser.call_tool("get_console_logs", {
             "logLevel": "SEVERE",
             "maxEntries": 5
         })
@@ -191,18 +174,15 @@ class TestConsoleLogging:
             logger.info("No logs field in logs result, which may be expected if no SEVERE logs exist")
 
     @pytest.mark.asyncio
-    async def test_inject_console_logger_with_custom_timeout(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_inject_console_logger_with_custom_timeout(self, browser: MCPSeleniumClient, test_server):
         """Test injecting console logger with custom timeout parameter"""
-
-        # Start browser
-        await mcp_client.start_browser("chrome", headless=True)
 
         # Navigate to the test page
         url = f"{test_server.base_url}/test_page_with_js_error.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
         # Inject console logger with custom timeout (30 seconds)
-        inject_result = await mcp_client.call_tool("inject_console_logger", {
+        inject_result = await browser.call_tool("inject_console_logger", {
             "timeout": 30000
         })
 
@@ -214,7 +194,7 @@ class TestConsoleLogging:
         time.sleep(2)
 
         # Get injected console logs to verify it's working
-        injected_logs_result = await mcp_client.call_tool("get_injected_console_logs", {
+        injected_logs_result = await browser.call_tool("get_injected_console_logs", {
             "clear": False
         })
 

@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable timeout parameter for `inject_console_logger` tool (default: 60000ms)
 - Additional integration test demonstrating custom timeout configuration
 - Increased HTTP retry count for improved reliability in CI environments
+- Function-scoped browser fixture in `conftest.py` for automated session management in integration tests
+- `close_browser` method to MCPSeleniumClient for proper session cleanup
 
 ### Fixed
 - Removed unused outputPath parameter from TakeScreenshotParams
@@ -39,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated from manual dependency management to automatic transitive dependency resolution
 - Converted to modern `format = "pyproject"` with `hatchling` build backend
 - Updated integration test scripts to work with new directory structure
+- Migrated all integration tests to use browser fixture for automatic session management (except test_browser_management.py which explicitly tests start_browser functionality)
+- Enhanced MCPSeleniumClient to prevent starting multiple browser sessions - now returns error if browser is already running
 
 ### Refactored
 - Abstracted stderr logging pattern `hPutStrLn stderr "..." >> hFlush stderr` into shared utility function

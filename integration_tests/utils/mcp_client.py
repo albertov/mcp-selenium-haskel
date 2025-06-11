@@ -94,6 +94,10 @@ class MCPSeleniumClient:
 
     async def start_browser(self, browser: str = "chrome", headless: bool = True) -> Dict[str, Any]:
         """Start a browser session"""
+        # Check if browser is already running
+        if self.session_id:
+            return {"error": "Browser already started. Close the current session before starting a new one."}
+
         options = {
             "headless": headless,
             "arguments": []

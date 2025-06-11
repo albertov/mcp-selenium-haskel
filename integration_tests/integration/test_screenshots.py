@@ -7,13 +7,12 @@ class TestScreenshots:
     """Test screenshot functionality"""
 
     @pytest.mark.asyncio
-    async def test_full_page_screenshot(self, mcp_client: MCPSeleniumClient, test_server):
+    async def test_full_page_screenshot(self, browser: MCPSeleniumClient, test_server):
         """Test taking full page screenshot"""
-        await mcp_client.start_browser()
         url = f"{test_server.base_url}/test_page.html"
-        await mcp_client.navigate(url)
+        await browser.navigate(url)
 
-        result = await mcp_client.take_screenshot()
+        result = await browser.take_screenshot()
 
         assert "error" not in result
         # Check for screenshot data in common formats
@@ -42,11 +41,9 @@ class TestScreenshots:
             assert "error" not in result, "Screenshot should not return error"
 
     @pytest.mark.asyncio
-    async def test_screenshot_without_navigation(self, mcp_client: MCPSeleniumClient):
+    async def test_screenshot_without_navigation(self, browser: MCPSeleniumClient):
         """Test taking screenshot immediately after browser start"""
-        await mcp_client.start_browser()
-
-        result = await mcp_client.take_screenshot()
+        result = await browser.take_screenshot()
 
         # Should work even without navigation (blank page)
         assert "error" not in result
