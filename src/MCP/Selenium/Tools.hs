@@ -144,12 +144,11 @@ data UploadFileParams = UploadFileParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- FIXME: Remove the outputPath parameter from this
--- too
-newtype TakeScreenshotParams = TakeScreenshotParams
-  { outputPath :: Maybe T.Text
-  }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+data TakeScreenshotParams = TakeScreenshotParams
+  deriving (Eq, Show, Generic, ToJSON)
+
+instance FromJSON TakeScreenshotParams where
+  parseJSON _ = pure TakeScreenshotParams
 
 data CloseSessionParams = CloseSessionParams
   deriving (Eq, Show, Generic, ToJSON)
@@ -437,14 +436,14 @@ handleUploadFile tools (UploadFileParams byVal valueVal filePathVal timeoutVal) 
 
 -- | Handle take_screenshot tool
 handleTakeScreenshot :: SeleniumTools -> TakeScreenshotParams -> IO CallToolResult
-handleTakeScreenshot tools (TakeScreenshotParams outputPathVal) = do
+handleTakeScreenshot tools TakeScreenshotParams = do
   sessionMaybe <- readTVarIO (sessionVar tools)
   case sessionMaybe of
     Nothing -> return $ errorResult "No active browser session"
     Just session ->
       catch
         ( do
-            result <- takeScreenshot session outputPathVal
+            result <- takeScreenshot session Nothing
             return $ successResult $ "Screenshot captured: " <> result
         )
         (\e -> return $ errorResult $ "Screenshot failed: " <> T.pack (show (e :: SomeException)))

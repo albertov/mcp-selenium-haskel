@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive integration test suite with 25+ tests
 - Modern Python packaging with pyproject.toml and hatchling
 
+### Fixed
+- Removed unused outputPath parameter from TakeScreenshotParams
+
 ### Changed
 - **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory
 - **BREAKING**: Restructured Python package to use proper module naming (underscores)
