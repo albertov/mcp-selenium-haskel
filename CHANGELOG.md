@@ -8,59 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - UNRELEASED
 
 ### Added
-- Initial release of MCP Selenium Haskell server
-- WebDriver operations wrapper for Selenium automation
-- Support for Chrome and Firefox browsers
-- Browser session management with customizable options
-- Element interaction (click, send keys, hover, etc.)
-- Screenshot capabilities
-- Page source retrieval tool (`get_source`) to fetch HTML source code
-- MCP server implementation for browser automation
-- Comprehensive integration test suite with 25+ tests
-- Modern Python packaging with pyproject.toml and hatchling
-- Release tarball generation script (`release-tarball`) that automatically creates compressed archives with executable and documentation files
-- CONTRIBUTORS.md file to track project contributors
-
-### Fixed
-- Fixed Chrome logging configuration to properly enable browser logging capabilities
-- Updated integration test expectations to reflect actual Chrome logging behavior where browser logs work even when not reported as available
-- Improved Chrome experimental options configuration using `chromeExperimentalOptions`
-- Configurable timeout parameter for `inject_console_logger` tool (default: 60000ms)
-- Additional integration test demonstrating custom timeout configuration
-- Increased HTTP retry count for improved reliability in CI environments
-- Function-scoped browser fixture in `conftest.py` for automated session management in integration tests
-- `close_browser` method to MCPSeleniumClient for proper session cleanup
-- Fixed `close_browser` parameter parsing issue by completing the rename from `close_session` to `close_browser` across all components
-- Removed unused outputPath parameter from TakeScreenshotParams
-- Python dependency management in flake.nix by migrating integration tests to writeShellApplication with proper pythonEnv
-- HTML fixtures directory path to work in both development and packaged environments
-- Import issues by creating proper Python package structure
-- Integration test orchestration to use correct paths
-- Console logger injection timeout issues in CI environments by adding configurable script timeout parameter
-- Integration test compatibility with session management system - updated Python client to automatically handle session_id parameters
-- Integration test start_browser calls to use convenience methods for proper session tracking
-
-### Changed
-- **BREAKING**: Moved integration tests from `tests/` to `integration_tests/` directory
-- **BREAKING**: Restructured Python package to use proper module naming (underscores)
-- **BREAKING**: Removed `strategy` parameter from `find_element` tool, keeping only `by` parameter for locator strategy
-- **BREAKING**: Renamed MCP tool from `close_session` to `close_browser` for consistency with other browser automation tools
-- Modernized build system from `writeShellApplication` to `buildPythonApplication`
-- Updated from manual dependency management to automatic transitive dependency resolution
-- Converted to modern `format = "pyproject"` with `hatchling` build backend
-- Updated integration test scripts to work with new directory structure
-- Migrated all integration tests to use browser fixture for automatic session management (except test_browser_management.py which explicitly tests start_browser functionality)
-- Enhanced MCPSeleniumClient to prevent starting multiple browser sessions - now returns error if browser is already running
-
-### Refactored
-- Abstracted stderr logging pattern `hPutStrLn stderr "..." >> hFlush stderr` into shared utility function
-- Created new `MCP.Selenium.Utils` module with `debugLog` helper function
-- Updated all modules to use shared logging utility for improved maintainability
-- Removed code duplication across Server and Tools modules
-- Renamed Haskell types and functions from `CloseSession*` to `CloseBrowser*` to match the MCP tool rename
-
-### Technical Details
-- Replaced custom shell scripts with proper Python console script entry points
-- Added pyproject.toml with modern Python packaging standards
-- Improved Nix integration with buildPythonApplication for better dependency management
-- Enhanced test infrastructure with automatic fixture path resolution
+- Initial release of MCP Selenium server for browser automation
+- Support for Chrome and Firefox browsers with session management
+- Element interaction tools (click, send keys, hover, etc.)
+- Screenshot and page source retrieval capabilities
+- Console logging injection and retrieval
+- Comprehensive integration test suite
+- Release tarball generation script
