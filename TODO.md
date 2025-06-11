@@ -5,18 +5,18 @@ This document lists identified areas for improvement, missing features, incomple
 ## 🚨 Critical Issues
 
 ### Version Inconsistencies
-- [ ] **Fix version mismatch**: `mcp-selenium.cabal` shows version `0.1.0`, but `Server.hs` declares version `1.0.0`. It should be 0.1.0
+- [x] **Fix version mismatch**: `mcp-selenium.cabal` shows version `0.1.0`, but `Server.hs` declares version `1.0.0`. It should be 0.1.0
 - [ ] **Update CHANGELOG**: Version is marked as `UNRELEASED`. Do this when we're ready to release
 - [ ] **Synchronize all version references** across cabal file, server implementation, and documentation
 
 ### Missing GHC Version Support
-- [ ] **Fix GHC version mismatch**: `mcp-selenium.cabal` declares `tested-with: GHC == 9.12.2` but project uses GHC 9.10.2
-- [ ] **Update tested-with field** to reflect actual supported GHC versions
+- [x] **Fix GHC version mismatch**: `mcp-selenium.cabal` declares `tested-with: GHC == 9.12.2` but project uses GHC 9.10.2
+- [x] **Update tested-with field** to reflect actual supported GHC versions
 
 ## 🔧 Incomplete/Mock Implementations
 
 ### WebDriver Functionality
-- [ ] **Complete right-click implementation**: Currently only moves to element, doesn't perform actual right-click
+- [x] **Complete right-click implementation**: Currently only moves to element, doesn't perform actual right-click
   ```haskell
   -- In WebDriver.hs line 233: contextClick is not available, only moveToCenter
   ```

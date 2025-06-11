@@ -28,7 +28,7 @@ maintainer: alberto@toscat.net
 category: Web, Browser, Testing, WebDriver, Selenium, MCP
 build-type: Simple
 tested-with:
-    GHC == 9.12.2
+    GHC == 9.10.2
 
 extra-source-files:
   README.md

@@ -230,9 +230,21 @@ rightClickElement (SeleniumSession _ session) locator timeoutMs = do
   WD.runWD session $ do
     WD.setImplicitWait (fromIntegral timeoutMs)
     element <- WD.findElem (locatorToBy locator)
-    -- Note: contextClick is not available in this webdriver version
-    -- As a workaround, we move to the element
-    WD.moveToCenter element
+    -- Perform right-click using JavaScript since WebDriver doesn't have direct right-click support
+    (_ :: Maybe ()) <-
+      executeJS
+        [WD.JSArg element]
+        [r|
+      var element = arguments[0];
+      var event = new MouseEvent('contextmenu', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        button: 2
+      });
+      element.dispatchEvent(event);
+    |]
+    return ()
 
 -- | Press a key
 pressKey :: SeleniumSession -> T.Text -> IO ()
