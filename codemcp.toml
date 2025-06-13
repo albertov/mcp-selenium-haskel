@@ -33,7 +33,8 @@ When your work is ready, you MUST:
 1) Run a final exhaustive check with the 'nix-integration-test' command. ALL tests MUST pass! We allow no flaky tests here
 2) Run the 'branch_diff' command to get a diff of all the files that have been
 modified in this branch and update their CHANGELOG.md and any other '*.md'
-documents to reflect the changes we've done if not mentioned.
+documents to reflect the changes we've done if not mentioned. Do not print the
+summary to the user, update the files instead.
 """
 
 [commands.check_flake]
