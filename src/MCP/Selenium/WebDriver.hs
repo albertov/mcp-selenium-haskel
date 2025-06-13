@@ -116,7 +116,7 @@ module MCP.Selenium.WebDriver
 where
 
 import Control.Exception (Exception)
-import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
+import Data.Aeson (Value, FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
@@ -485,7 +485,7 @@ getPageSource (SeleniumSession _ session) = do
   WD.runWD session getSource
 
 -- | Execute JavaScript code in the browser and return the result
-executeJavaScript :: SeleniumSession -> T.Text -> [T.Text] -> Int -> IO T.Text
+executeJavaScript :: SeleniumSession -> T.Text -> [Value] -> Int -> IO T.Text
 executeJavaScript (SeleniumSession _ session) script args timeoutMs = do
   result <- WD.runWD session $ do
     -- Set script timeout based on the provided parameter

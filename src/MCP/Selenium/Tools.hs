@@ -134,7 +134,7 @@ where
 
 import Control.Concurrent.STM (TVar, atomically, modifyTVar, newTVarIO, readTVarIO)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON, (.=))
+import Data.Aeson (FromJSON, ToJSON, Value, encode, object, toJSON, (.=))
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HashMap
 import Data.Maybe (fromMaybe)
@@ -355,7 +355,7 @@ newtype GetSourceParams = GetSourceParams
 data ExecuteJSParams = ExecuteJSParams
   { session_id :: SessionId,
     script :: T.Text,
-    args :: Maybe [T.Text],
+    args :: Maybe [Value],
     timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
