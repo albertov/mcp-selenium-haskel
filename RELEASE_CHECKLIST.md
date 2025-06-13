@@ -7,6 +7,7 @@ This document outlines the steps to follow when releasing a new version of mcp-s
 ### 1. Documentation Review
 - [ ] Ensure README.md is up to date with latest features
 - [ ] Ensure API.md is up to date with current tool schemas and version
+- [ ] Ensure Server.hs is up to date with current tool schemas and version
 - [ ] Review CHANGELOG.md for completeness and accuracy
 
 ### 2. Version Updates
