@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `PR_DESCRIPTION.md` template for consistent PR descriptions
   - Intelligent branch detection and validation
   - Auto-generation of PR titles and bodies from git history
+  - `create_pr` command added to codemcp.toml for easy PR creation from codecmp
 
 ### Changed
 - **Enhanced `take_screenshot` tool** to return base64 image data directly instead of descriptive message

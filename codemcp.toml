@@ -131,6 +131,12 @@ doc = """
 Run git tag to create or list tags. Don't you dare delete them.
 """
 
+[commands.git_push]
+command = ["git", "push"]
+doc = """
+Run git push to push this branch. Never push 'main'
+"""
+
 [commands.branch_log]
 command = ["./run_branch_log.sh"]
 doc = "Show the log messages of the changes done in this branch"
@@ -138,6 +144,24 @@ doc = "Show the log messages of the changes done in this branch"
 [commands.changed_files]
 command = ["./run_changed_files.sh"]
 doc = "List the file names that have been changed in this branch"
+
+[commands.create_pr]
+command = ["./run_create_pr.sh"]
+doc = """
+Create a GitHub Pull Request automatically for the current branch.
+
+Usage:
+  create_pr                           # Auto-generate title and body
+  create_pr "Custom Title"            # Custom title, auto-generate body
+  create_pr "Title" "body_file.md"    # Custom title and body from file
+
+The script will:
+- Check GitHub CLI authentication
+- Push current branch if needed
+- Generate PR title from branch name if not provided
+- Use PR_DESCRIPTION.md if available, or generate basic body
+- Create PR and open in browser
+"""
 
 [logger]
 # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
