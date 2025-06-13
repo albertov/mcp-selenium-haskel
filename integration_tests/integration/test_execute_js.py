@@ -35,6 +35,80 @@ class TestExecuteJS:
         assert result["text"] == expected, f"Expected '{expected}', got '{result['text']}'"
 
     @pytest.mark.asyncio
+    async def test_execute_js_with_diverse_argument_types(self, browser: MCPSeleniumClient):
+        """Test executing JavaScript with diverse argument types (string, number, object, array, boolean, null)."""
+        script = """
+        var str = arguments[0];
+        var num = arguments[1];
+        var obj = arguments[2];
+        var arr = arguments[3];
+        var bool1 = arguments[4];
+        var bool2 = arguments[5];
+        var nullVal = arguments[6];
+
+        return {
+            string: str,
+            number: num,
+            object: obj,
+            array: arr,
+            boolean_true: bool1,
+            boolean_false: bool2,
+            null_value: nullVal,
+            types: {
+                string: typeof str,
+                number: typeof num,
+                object: typeof obj,
+                array: Array.isArray(arr),
+                boolean1: typeof bool1,
+                boolean2: typeof bool2,
+                null: nullVal === null
+            }
+        };
+        """
+
+        # Test with diverse argument types: string, number, object, array, boolean true, boolean false, null
+        result = await browser.execute_js(script, args=[
+            "hello world",           # string
+            42,                      # number
+            {"key": "value", "nested": {"inner": "data"}},  # object
+            [1, 2, "three", {"four": 4}],  # array
+            True,                    # boolean true
+            False,                   # boolean false
+            None                     # null
+        ])
+
+        assert "error" not in result, f"JavaScript execution failed: {result}"
+
+        try:
+            data = json.loads(result["text"])
+
+            # Verify the values were passed correctly
+            assert data["string"] == "hello world", f"String argument mismatch: {data['string']}"
+            assert data["number"] == 42, f"Number argument mismatch: {data['number']}"
+            assert data["object"] == {"key": "value", "nested": {"inner": "data"}}, f"Object argument mismatch: {data['object']}"
+            assert data["array"] == [1, 2, "three", {"four": 4}], f"Array argument mismatch: {data['array']}"
+            assert data["boolean_true"] is True, f"Boolean true argument mismatch: {data['boolean_true']}"
+            assert data["boolean_false"] is False, f"Boolean false argument mismatch: {data['boolean_false']}"
+            assert data["null_value"] is None, f"Null argument mismatch: {data['null_value']}"
+
+            # Verify the types were preserved correctly in JavaScript
+            types = data["types"]
+            assert types["string"] == "string", f"Expected string type, got {types['string']}"
+            assert types["number"] == "number", f"Expected number type, got {types['number']}"
+            assert types["object"] == "object", f"Expected object type, got {types['object']}"
+            assert types["array"] is True, f"Expected array to be detected as array, got {types['array']}"
+            assert types["boolean1"] == "boolean", f"Expected boolean type for true, got {types['boolean1']}"
+            assert types["boolean2"] == "boolean", f"Expected boolean type for false, got {types['boolean2']}"
+            assert types["null"] is True, f"Expected null to be detected as null, got {types['null']}"
+
+        except json.JSONDecodeError:
+            pytest.fail(f"Response is not valid JSON: {result['text']}")
+        except KeyError as e:
+            pytest.fail(f"Missing expected key in response: {e}")
+        except AssertionError as e:
+            pytest.fail(f"Assertion failed: {e}")
+
+    @pytest.mark.asyncio
     async def test_execute_js_dom_access(self, browser: MCPSeleniumClient, test_server):
         """Test executing JavaScript that accesses the DOM."""
         url = f"{test_server.base_url}/test_page.html"

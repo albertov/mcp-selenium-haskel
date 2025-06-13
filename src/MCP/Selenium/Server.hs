@@ -765,7 +765,7 @@ executeJSTool =
           },
           "args": {
             "type": "array",
-            "items": {"type": "string"},
+            "items": {},
             "description": "Arguments to pass to the script (optional)"
           },
           "timeout": {

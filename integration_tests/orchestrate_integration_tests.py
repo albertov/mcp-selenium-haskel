@@ -116,7 +116,7 @@ class ServiceManager:
                         "integration/",
                         "-v",
                         "--tb=short"
-                        ] + sys.args[1:]
+                        ] + sys.argv[1:]
                     tests_found = True
                     break
 

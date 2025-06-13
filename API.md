@@ -5,7 +5,7 @@ This document provides comprehensive API documentation for all tools available i
 ## Server Information
 
 - **Implementation**: mcp-selenium-haskell
-- **Version**: 1.0.0
+- **Version**: 0.1.0
 - **Description**: Selenium WebDriver automation server for browser automation tasks
 - **Supported Browsers**: Chrome, Firefox
 - **Session Model**: Multi-session with UUID-based session management
@@ -224,6 +224,55 @@ Locates an element on the page using various strategies.
 
 ---
 
+### find_elements
+
+Locates multiple elements on the page using various strategies.
+
+**Parameters:**
+- `session_id` (required): UUID of the browser session
+- `by` (optional): Locator strategy - "id", "css", "xpath", "name", "tag", "class" (default: "id")
+- `value` (required): Value for the locator strategy
+- `timeout` (optional): Maximum wait time in milliseconds (default: 10000)
+
+**Supported Locator Strategies:**
+- `id`: Find by element ID attribute
+- `css`: Find by CSS selector (most flexible)
+- `xpath`: Find by XPath expression (powerful but can be fragile)
+- `name`: Find by name attribute
+- `tag`: Find by HTML tag name
+- `class`: Find by CSS class name
+
+**Examples:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "by": "css",
+  "value": ".item",
+  "timeout": 5000
+}
+```
+
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "by": "xpath",
+  "value": "//div[@class='product']",
+  "timeout": 3000
+}
+```
+
+**Response:**
+- **Success**: `{"elementIds": ["element-uuid-1", "element-uuid-2"], "count": 2, "text": "Found 2 elements"}`
+- **Error**: See [Error Response Format](#error-response-format)
+
+**Error Codes:**
+- `E031`: Session not found
+- `E032`: Elements not found within timeout
+- `E033`: Invalid locator strategy
+- `E034`: Malformed selector
+
+---
+
 ## Element Interaction
 
 ### click_element
@@ -319,6 +368,37 @@ Retrieves the text content of a specified element.
 **Error Codes:**
 - `E061`: Session not found
 - `E062`: Element not found
+- `E063`: Failed to retrieve text
+
+---
+
+### get_elements_text
+
+Retrieves the text content of multiple elements matching the specified locator.
+
+**Parameters:**
+- `session_id` (required): UUID of the browser session
+- `by` (required): Locator strategy
+- `value` (required): Value for the locator strategy
+- `timeout` (optional): Maximum wait time in milliseconds (default: 10000)
+
+**Example:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "by": "css",
+  "value": ".product-title",
+  "timeout": 3000
+}
+```
+
+**Response:**
+- **Success**: `{"texts": ["Product A", "Product B", "Product C"], "count": 3}`
+- **Error**: See [Error Response Format](#error-response-format)
+
+**Error Codes:**
+- `E061`: Session not found
+- `E062`: Elements not found
 - `E063`: Failed to retrieve text
 
 ---
@@ -553,7 +633,7 @@ Executes JavaScript code in the browser and returns the result.
 **Parameters:**
 - `session_id` (required): UUID of the browser session
 - `script` (required): JavaScript code to execute
-- `args` (optional): Array of string arguments to pass to the script
+- `args` (optional): Array of arguments to pass to the script (can be any JSON values: strings, numbers, objects, arrays, booleans, null)
 - `timeout` (optional): Script execution timeout in milliseconds (default: 30000)
 
 **JavaScript Execution Context:**
@@ -591,6 +671,15 @@ Executes JavaScript code in the browser and returns the result.
   "script": "var name = arguments[0]; var age = arguments[1]; return 'Hello ' + name + ', you are ' + age + ' years old';",
   "args": ["John", "25"],
   "timeout": 10000
+}
+```
+
+**Example - Using diverse argument types:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "script": "var str = arguments[0]; var num = arguments[1]; var obj = arguments[2]; var arr = arguments[3]; var bool = arguments[4]; return {string: str, number: num, object: obj, array: arr, boolean: bool};",
+  "args": ["hello", 42, {"key": "value"}, [1, 2, 3], true]
 }
 ```
 
