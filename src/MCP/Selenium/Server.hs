@@ -83,7 +83,7 @@ createSeleniumServer = do
   tools <- createSeleniumTools
   debugLog "SERVER_DEBUG: Created SeleniumTools instance"
 
-  let serverInfo = Implementation "mcp-selenium-haskell" "0.1.0"
+  let serverInfo = Implementation "mcp-selenium-haskell" "0.2.0"
       serverCapabilities =
         ServerCapabilities
           { resourcesCapability = Nothing,
