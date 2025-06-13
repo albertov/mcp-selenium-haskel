@@ -109,11 +109,14 @@ module MCP.Selenium.WebDriver
     getAvailableLogTypes,
     injectConsoleLogger,
     getInjectedConsoleLogs,
+
+    -- * JavaScript Execution
+    executeJavaScript,
   )
 where
 
 import Control.Exception (Exception)
-import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
+import Data.Aeson (FromJSON, ToJSON, Value, parseJSON, toJSON)
 import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
@@ -480,3 +483,31 @@ getInjectedConsoleLogs (SeleniumSession _ session) clearLogs = do
 getPageSource :: SeleniumSession -> IO T.Text
 getPageSource (SeleniumSession _ session) = do
   WD.runWD session getSource
+
+-- | Execute JavaScript code in the browser and return the result
+executeJavaScript :: SeleniumSession -> T.Text -> [Value] -> Int -> IO T.Text
+executeJavaScript (SeleniumSession _ session) script args timeoutMs = do
+  result <- WD.runWD session $ do
+    -- Set script timeout based on the provided parameter
+    WD.setScriptTimeout (fromIntegral timeoutMs)
+    -- Convert string arguments to JSArg format and build argument passing code
+    let jsArgs = map WD.JSArg args
+        -- Create a function wrapper that accepts arguments and executes the user script
+        -- Handle the result based on its type to avoid double-quoting strings
+        wrappedScript =
+          "var userArgs = Array.prototype.slice.call(arguments);\
+          \var result = (function() {\
+          \"
+            <> script
+            <> "\
+               \}).apply(this, userArgs);\
+               \if (typeof result === 'string') {\
+               \  return result;\
+               \} else {\
+               \  return JSON.stringify(result);\
+               \}"
+    (jsResult :: Maybe T.Text) <- executeJS jsArgs wrappedScript
+    return jsResult
+  case result of
+    Just res -> return res
+    Nothing -> return "null"

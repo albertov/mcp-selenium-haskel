@@ -76,10 +76,17 @@ command is killed then this is the reason.
 command = ["cabal", "test"]
 doc = "Accepts the name of a single package as an argument to run their specific tests"
 
+[commands.lynx]
+command = ["lynx", "-dump"]
+doc = """
+Use Lynx to view documentation links that hoogle shows
+"""
+
+
 [commands.hoogle]
 command = ["./run_hoogle.sh"]
 doc = """
-Use Hoogle to seach symbols in available dependencies.
+Use Hoogle to search for symbols in available dependencies.
 
 Before explaining the syntax of searches, we first give a list of example
 searches with their meaning:
@@ -117,6 +124,12 @@ When asked to lint every haskell file just call it like "lint ."
 [commands.branch_diff]
 command = ["./run_branch_changes.sh"]
 doc = "Show a diff of the changes in this branch against base branch"
+
+[commands.git_tag]
+command = ["git", "tag"]
+doc = """
+Run git tag to create or list tags. Don't you dare delete them.
+"""
 
 [commands.branch_log]
 command = ["./run_branch_log.sh"]

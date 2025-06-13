@@ -26,5 +26,6 @@ rec {
       mcp
       git
       coreutils
+      gh # GitHub CLI for PR automation
     ];
 }

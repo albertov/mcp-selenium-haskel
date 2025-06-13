@@ -126,7 +126,8 @@ createSeleniumServer = do
           getAvailableLogTypesTool,
           injectConsoleLoggerTool,
           getInjectedConsoleLogsTool,
-          getSourceTool
+          getSourceTool,
+          executeJSTool
         ]
 
   registerTools server allTools
@@ -164,13 +165,14 @@ createHandler tools request = do
     "inject_console_logger" -> parseAndHandle handleInjectConsoleLogger
     "get_injected_console_logs" -> parseAndHandle handleGetInjectedConsoleLogs
     "get_source" -> parseAndHandle handleGetSource
+    "execute_js" -> parseAndHandle handleExecuteJS
     _ -> return $ CallToolResult [ToolContent TextualContent (Just "Unknown tool")] True
   where
     parseAndHandle :: (FromJSON params) => (SeleniumTools -> params -> IO CallToolResult) -> IO CallToolResult
     parseAndHandle handler = do
-      let args = object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))
-      debugLog $ "SERVER_DEBUG: Parsing arguments: " ++ show args
-      case parseMaybe parseJSON args of
+      let requestArgs = object (map (\(k, v) -> fromText k .= v) (Map.toList (callToolArguments request)))
+      debugLog $ "SERVER_DEBUG: Parsing arguments: " ++ show requestArgs
+      case parseMaybe parseJSON requestArgs of
         Nothing -> do
           debugLog "SERVER_DEBUG: Failed to parse parameters"
           return $ CallToolResult [ToolContent TextualContent (Just "Invalid parameters")] True
@@ -741,6 +743,38 @@ getSourceTool =
           }
         },
         "required": ["session_id"]
+      }|]
+    }
+
+executeJSTool :: Tool
+executeJSTool =
+  Tool
+    { toolName = "execute_js",
+      toolDescription = Just "Executes JavaScript code in the browser and returns the result",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
+          "script": {
+            "type": "string",
+            "description": "JavaScript code to execute"
+          },
+          "args": {
+            "type": "array",
+            "items": {},
+            "description": "Arguments to pass to the script (optional)"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Script execution timeout in milliseconds",
+            "default": 30000
+          }
+        },
+        "required": ["session_id", "script"]
       }|]
     }
 

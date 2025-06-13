@@ -97,6 +97,7 @@ module MCP.Selenium.Tools
     InjectConsoleLoggerParams (..),
     GetInjectedConsoleLogsParams (..),
     GetSourceParams (..),
+    ExecuteJSParams (..),
 
     -- * Session Management
     createSeleniumTools,
@@ -127,12 +128,13 @@ module MCP.Selenium.Tools
     handleInjectConsoleLogger,
     handleGetInjectedConsoleLogs,
     handleGetSource,
+    handleExecuteJS,
   )
 where
 
 import Control.Concurrent.STM (TVar, atomically, modifyTVar, newTVarIO, readTVarIO)
 import Control.Exception (SomeException, catch)
-import Data.Aeson (FromJSON, ToJSON, encode, object, toJSON, (.=))
+import Data.Aeson (FromJSON, ToJSON, Value, encode, object, toJSON, (.=))
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HashMap
 import Data.Maybe (fromMaybe)
@@ -347,6 +349,14 @@ data GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
 
 newtype GetSourceParams = GetSourceParams
   { session_id :: SessionId
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data ExecuteJSParams = ExecuteJSParams
+  { session_id :: SessionId,
+    script :: T.Text,
+    args :: Maybe [Value],
+    timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -667,6 +677,9 @@ handleUploadFile tools (UploadFileParams sessionId byVal valueVal filePathVal ti
         (\e -> return $ errorResult $ "Upload file failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle take_screenshot tool
+-- Note: Returns base64 image data as TextualContent due to hs-mcp library limitations.
+-- The library's ImageContent type doesn't properly support the data/mimeType fields
+-- expected by the MCP protocol. This should be updated when hs-mcp supports proper ImageContent.
 handleTakeScreenshot :: SeleniumTools -> TakeScreenshotParams -> IO CallToolResult
 handleTakeScreenshot tools (TakeScreenshotParams sessionId) = do
   sessionMaybe <- lookupSession tools sessionId
@@ -675,8 +688,8 @@ handleTakeScreenshot tools (TakeScreenshotParams sessionId) = do
     Just sessionData ->
       catch
         ( do
-            result <- takeScreenshot (seleniumSession sessionData) Nothing
-            return $ successResult $ "Screenshot captured: " <> result
+            imageData <- takeScreenshot (seleniumSession sessionData) Nothing
+            return $ successResult imageData
         )
         (\e -> return $ errorResult $ "Screenshot failed: " <> T.pack (show (e :: SomeException)))
 
@@ -819,6 +832,33 @@ handleGetSource tools (GetSourceParams sessionId) = do
         ( \e -> do
             debugLog ("HANDLER: Exception in get_source: " ++ show (e :: SomeException))
             return $ errorResult $ "Get page source failed: " <> T.pack (show (e :: SomeException))
+        )
+
+-- | Handle execute_js tool
+handleExecuteJS :: SeleniumTools -> ExecuteJSParams -> IO CallToolResult
+handleExecuteJS tools (ExecuteJSParams sessionId scriptText argsText timeoutVal) = do
+  debugLog "HANDLER: execute_js called"
+  sessionMaybe <- lookupSession tools sessionId
+  case sessionMaybe of
+    Nothing -> do
+      debugLog "HANDLER: Session not found in execute_js"
+      return $ errorResult "Session not found"
+    Just sessionData ->
+      catch
+        ( do
+            debugLog "HANDLER: Executing JavaScript"
+            let timeoutMs = fromMaybe 30000 timeoutVal
+                jsArgs = fromMaybe [] argsText
+            result <- executeJavaScript (seleniumSession sessionData) scriptText jsArgs timeoutMs
+            debugLog "HANDLER: JavaScript executed successfully"
+            -- Create structured response with text field
+            let responseJson = object ["text" .= result]
+                responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+        )
+        ( \e -> do
+            debugLog ("HANDLER: Exception in execute_js: " ++ show (e :: SomeException))
+            return $ errorResult $ "JavaScript execution failed: " <> T.pack (show (e :: SomeException))
         )
 
 -- | Create selenium tools instance

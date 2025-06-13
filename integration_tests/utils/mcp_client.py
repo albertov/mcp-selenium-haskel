@@ -74,7 +74,7 @@ class MCPSeleniumClient:
             "get_elements_text", "hover", "drag_and_drop", "double_click", "right_click", "press_key",
             "upload_file", "take_screenshot", "close_browser", "get_console_logs",
             "get_available_log_types", "inject_console_logger", "get_injected_console_logs",
-            "get_source"
+            "get_source", "execute_js"
         }
 
         if tool_name in session_required_tools and "session_id" not in arguments:
@@ -265,3 +265,12 @@ class MCPSeleniumClient:
     async def get_available_log_types(self) -> Dict[str, Any]:
         """Get available log types from the browser"""
         return await self.call_tool("get_available_log_types", {})
+
+    async def execute_js(self, script: str, args: Optional[List[str]] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
+        """Execute JavaScript in the browser and return the result"""
+        tool_args = {"script": script}
+        if args:
+            tool_args["args"] = args
+        if timeout:
+            tool_args["timeout"] = timeout * 1000  # Convert to milliseconds
+        return await self.call_tool("execute_js", tool_args)
