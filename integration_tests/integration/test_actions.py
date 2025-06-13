@@ -158,21 +158,28 @@ class TestMouseKeyboardActions:
 
         assert "error" not in result
 
-        # Add a small delay to allow JavaScript to process the events
-        await asyncio.sleep(0.2)
+        # Wait up to 2 seconds for log to update with drag and drop events
+        has_drag_events = False
+        for _ in range(20):
+            log_result = await browser.get_element_text("id", "result-log")
+            assert "error" not in log_result
+            log_text = log_result.get("text", "").lower()
 
-        # Verify drag and drop actions were detected
-        log_result = await browser.get_element_text("id", "result-log")
+            # Check if both drag-start and drop events were detected
+            has_drag_start = "drag-start action detected" in log_text
+            has_drop = "drop action detected" in log_text
+            has_drag_events = has_drag_start and has_drop
 
-        assert "error" not in log_result
-        log_text = log_result.get("text", "").lower()
+            if has_drag_events:
+                break
+            await asyncio.sleep(0.1)
+
         # WebDriver's mouseDown/mouseUp approach may not trigger HTML5 drag events
         # but it should at least complete successfully. We'll be more lenient here.
-        has_drag_events = "drag-start action detected" in log_text and "drop action detected" in log_text
         operation_successful = "error" not in result
 
         # Accept either proper HTML5 drag events or successful WebDriver operation
-        assert has_drag_events or operation_successful
+        assert has_drag_events or operation_successful, f"Neither drag events detected nor operation successful. Log: {log_text if 'log_text' in locals() else 'N/A'}"
 
     @pytest.mark.asyncio
     async def test_action_on_nonexistent_element(self, browser: MCPSeleniumClient, test_server):
