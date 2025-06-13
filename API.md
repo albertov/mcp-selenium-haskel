@@ -5,7 +5,7 @@ This document provides comprehensive API documentation for all tools available i
 ## Server Information
 
 - **Implementation**: mcp-selenium-haskell
-- **Version**: 0.1.0
+- **Version**: 0.2.0
 - **Description**: Selenium WebDriver automation server for browser automation tasks
 - **Supported Browsers**: Chrome, Firefox
 - **Session Model**: Multi-session with UUID-based session management
@@ -998,51 +998,71 @@ All tools return standardized error responses when operations fail:
 1. Use headless mode for better performance
 2. Reduce implicit wait timeouts
 3. Optimize selectors (prefer ID > CSS > XPath)
-4. Close unused sessions to free resources
-5. Use local Selenium server instead of remote
+4. Use browser automation best practices
 
-**Problem**: Memory usage high
+### Console Logging Issues
+
+**Problem**: No console logs captured
 **Solutions**:
-1. Close sessions when no longer needed
-2. Limit number of concurrent sessions
-3. Clear browser cache periodically
-4. Monitor system resources
+1. Inject console logger before page navigation
+2. Check if logging is enabled in browser session
+3. Verify page doesn't override console methods
+4. Use multiple log types (native + injected)
 
-### Logging Issues
+### File Upload Issues
 
-**Problem**: Console logs not captured
+**Problem**: File upload fails
 **Solutions**:
-1. Enable logging in browser options: `"enableLogging": true`
-2. Inject console logger for comprehensive monitoring
-3. Check available log types first
-4. Verify browser supports requested log levels
+1. Verify file path is absolute and file exists
+2. Ensure element is a file input (`<input type="file">`)
+3. Check file permissions and accessibility
+4. Wait for file input to be ready before upload
 
-**Problem**: Log injection fails
-**Solutions**:
-1. Ensure page allows JavaScript execution
-2. Inject logger before page navigation
-3. Check for Content Security Policy restrictions
-4. Increase injection timeout for complex pages
+## Advanced Usage Patterns
 
-### Browser-Specific Issues
+### Error Recovery
+```json
+// Retry pattern for transient failures
+{
+  "tool": "click_element",
+  "arguments": {
+    "session_id": "session-1",
+    "by": "css",
+    "value": "#submit-btn",
+    "timeout": 5000
+  }
+}
+// If error E043 (not clickable), try scrolling into view first
+{
+  "tool": "execute_js",
+  "arguments": {
+    "session_id": "session-1",
+    "script": "document.querySelector('#submit-btn').scrollIntoView(); return 'scrolled';"
+  }
+}
+// Then retry click
+```
 
-**Chrome**:
-- Use `--no-sandbox` for containerized environments
-- Add `--disable-dev-shm-usage` for limited /dev/shm
-- Include `--disable-gpu` for headless mode
+### Dynamic Content Handling
+```json
+// Wait for dynamic content to load
+{
+  "tool": "execute_js",
+  "arguments": {
+    "session_id": "session-1",
+    "script": "var checkReady = function() { return document.querySelector('.loading') === null && document.querySelector('.content').children.length > 0; }; var start = Date.now(); while (!checkReady() && (Date.now() - start) < 10000) { /* wait */ } return checkReady();"
+  }
+}
+```
 
-**Firefox**:
-- Ensure GeckoDriver is compatible with Firefox version
-- Use `--safe-mode` for minimal extensions
-- Set appropriate window size for consistent behavior
-
-### Debugging Tips
-
-1. **Enable debug logging**: Set enableLogging to true in start_browser
-2. **Use browser DevTools**: Test selectors and inspect elements
-3. **Check Selenium logs**: Review WebDriver server logs for errors
-4. **Test incrementally**: Isolate issues by testing individual operations
-5. **Monitor resources**: Check CPU, memory usage during automation
-6. **Validate environment**: Ensure all dependencies are properly installed
-
-For additional support, check the integration test examples in `integration_tests/` directory.
+### Batch Data Extraction
+```json
+// Extract multiple data points in one operation
+{
+  "tool": "execute_js",
+  "arguments": {
+    "session_id": "session-1",
+    "script": "return { title: document.title, url: window.location.href, links: Array.from(document.querySelectorAll('a')).map(a => a.href), forms: document.forms.length };"
+  }
+}
+```
