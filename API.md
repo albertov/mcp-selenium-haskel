@@ -51,7 +51,8 @@ The tools are organized into the following categories:
 5. [Advanced Actions](#advanced-actions)
 6. [File Operations](#file-operations)
 7. [Utility Operations](#utility-operations)
-8. [Console Logging](#console-logging)
+8. [JavaScript Execution](#javascript-execution)
+9. [Console Logging](#console-logging)
 
 ---
 
@@ -540,6 +541,77 @@ Gets the current page's HTML source code.
 **Error Codes:**
 - `E111`: Session not found
 - `E112`: Failed to retrieve page source
+
+---
+
+## JavaScript Execution
+
+### execute_js
+
+Executes JavaScript code in the browser and returns the result.
+
+**Parameters:**
+- `session_id` (required): UUID of the browser session
+- `script` (required): JavaScript code to execute
+- `args` (optional): Array of string arguments to pass to the script
+- `timeout` (optional): Script execution timeout in milliseconds (default: 30000)
+
+**JavaScript Execution Context:**
+- The script executes in the browser's current page context
+- Script has access to the page's DOM and global variables
+- Arguments are passed as parameters to the script function
+- The script should return a value (primitive, object, or null)
+- Objects are automatically JSON-serialized in the response
+
+**Security Considerations:**
+- JavaScript execution is unrestricted and runs with full page privileges
+- Scripts can modify page content, access cookies, and make network requests
+- Use with caution on untrusted pages or when handling sensitive data
+
+**Example - Simple calculation:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "script": "return 2 + 3;"
+}
+```
+
+**Example - DOM manipulation:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "script": "document.getElementById('myButton').style.backgroundColor = 'red'; return 'Color changed';"
+}
+```
+
+**Example - Using arguments:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "script": "var name = arguments[0]; var age = arguments[1]; return 'Hello ' + name + ', you are ' + age + ' years old';",
+  "args": ["John", "25"],
+  "timeout": 10000
+}
+```
+
+**Example - Extracting page data:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "script": "return {title: document.title, url: window.location.href, elementCount: document.querySelectorAll('*').length};"
+}
+```
+
+**Response:**
+- **Success**: `{"text": "The return value of the JavaScript execution (as string)"}`
+- **Error**: See [Error Response Format](#error-response-format)
+
+**Error Codes:**
+- `E121`: Session not found
+- `E122`: JavaScript syntax error
+- `E123`: JavaScript runtime error
+- `E124`: Script execution timeout
+- `E125`: Script execution failed
 
 ---
 

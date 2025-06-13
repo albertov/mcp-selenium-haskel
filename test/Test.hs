@@ -5,7 +5,7 @@ module Main (main) where
 import Data.Aeson (decode, encode)
 import qualified Data.UUID as UUID
 import MCP.Selenium.Server
-import MCP.Selenium.Tools (ClickElementParams (..), CloseBrowserParams (..), DoubleClickParams (..), DragAndDropParams (..), FindElementParams (..), GetAvailableLogTypesParams (..), GetConsoleLogsParams (..), GetElementTextParams (..), GetInjectedConsoleLogsParams (..), GetSourceParams (..), HoverParams (..), InjectConsoleLoggerParams (..), NavigateParams (..), PressKeyParams (..), RightClickParams (..), SendKeysParams (..), SessionId, StartBrowserParams (..), TakeScreenshotParams (..), UploadFileParams (..), createSeleniumTools)
+import MCP.Selenium.Tools (ClickElementParams (..), CloseBrowserParams (..), DoubleClickParams (..), DragAndDropParams (..), ExecuteJSParams (..), FindElementParams (..), GetAvailableLogTypesParams (..), GetConsoleLogsParams (..), GetElementTextParams (..), GetInjectedConsoleLogsParams (..), GetSourceParams (..), HoverParams (..), InjectConsoleLoggerParams (..), NavigateParams (..), PressKeyParams (..), RightClickParams (..), SendKeysParams (..), SessionId, StartBrowserParams (..), TakeScreenshotParams (..), UploadFileParams (..), createSeleniumTools)
 import MCP.Selenium.WebDriver
 import SessionTest (sessionTests)
 import Test.Hspec
@@ -161,6 +161,15 @@ main = hspec $ do
     describe "GetSourceParams" $ do
       it "can be encoded and decoded as JSON" $ do
         let params = GetSourceParams dummySessionId
+        decode (encode params) `shouldBe` Just params
+
+    describe "ExecuteJSParams" $ do
+      it "can be encoded and decoded as JSON" $ do
+        let params = ExecuteJSParams dummySessionId "return 'Hello, world!';" (Just ["arg1", "arg2"]) (Just 5000)
+        decode (encode params) `shouldBe` Just params
+
+      it "handles optional fields" $ do
+        let params = ExecuteJSParams dummySessionId "console.log('test');" Nothing Nothing
         decode (encode params) `shouldBe` Just params
 
     describe "createSeleniumTools" $ do

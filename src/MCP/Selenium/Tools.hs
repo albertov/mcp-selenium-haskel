@@ -97,6 +97,7 @@ module MCP.Selenium.Tools
     InjectConsoleLoggerParams (..),
     GetInjectedConsoleLogsParams (..),
     GetSourceParams (..),
+    ExecuteJSParams (..),
 
     -- * Session Management
     createSeleniumTools,
@@ -127,6 +128,7 @@ module MCP.Selenium.Tools
     handleInjectConsoleLogger,
     handleGetInjectedConsoleLogs,
     handleGetSource,
+    handleExecuteJS,
   )
 where
 
@@ -347,6 +349,14 @@ data GetInjectedConsoleLogsParams = GetInjectedConsoleLogsParams
 
 newtype GetSourceParams = GetSourceParams
   { session_id :: SessionId
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data ExecuteJSParams = ExecuteJSParams
+  { session_id :: SessionId,
+    script :: T.Text,
+    args :: Maybe [T.Text],
+    timeout :: Maybe Int
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -819,6 +829,30 @@ handleGetSource tools (GetSourceParams sessionId) = do
         ( \e -> do
             debugLog ("HANDLER: Exception in get_source: " ++ show (e :: SomeException))
             return $ errorResult $ "Get page source failed: " <> T.pack (show (e :: SomeException))
+        )
+
+-- | Handle execute_js tool
+handleExecuteJS :: SeleniumTools -> ExecuteJSParams -> IO CallToolResult
+handleExecuteJS tools (ExecuteJSParams sessionId scriptText argsText timeoutVal) = do
+  debugLog "HANDLER: execute_js called"
+  sessionMaybe <- lookupSession tools sessionId
+  case sessionMaybe of
+    Nothing -> do
+      debugLog "HANDLER: Session not found in execute_js"
+      return $ errorResult "Session not found"
+    Just sessionData ->
+      catch
+        ( do
+            debugLog "HANDLER: Executing JavaScript"
+            let timeoutMs = fromMaybe 30000 timeoutVal
+                jsArgs = fromMaybe [] argsText
+            result <- executeJavaScript (seleniumSession sessionData) scriptText jsArgs timeoutMs
+            debugLog "HANDLER: JavaScript executed successfully"
+            return $ successResult result
+        )
+        ( \e -> do
+            debugLog ("HANDLER: Exception in execute_js: " ++ show (e :: SomeException))
+            return $ errorResult $ "JavaScript execution failed: " <> T.pack (show (e :: SomeException))
         )
 
 -- | Create selenium tools instance
