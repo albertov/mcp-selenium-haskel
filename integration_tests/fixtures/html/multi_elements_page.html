@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi Elements Test Page</title>
+    <style>
+        .card {
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .item {
+            margin: 5px 0;
+            padding: 8px;
+            background-color: #f0f0f0;
+        }
+        .highlight {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <h1>Multiple Elements Test Page</h1>
+
+    <!-- List items for testing multiple elements -->
+    <div id="list-container">
+        <h2>Fruit List</h2>
+        <ul>
+            <li class="fruit-item">Apple</li>
+            <li class="fruit-item">Banana</li>
+            <li class="fruit-item">Cherry</li>
+            <li class="fruit-item">Date</li>
+            <li class="fruit-item">Elderberry</li>
+        </ul>
+    </div>
+
+    <!-- Cards with same class -->
+    <div id="cards-container">
+        <h2>Product Cards</h2>
+        <div class="card product">
+            <h3>Product 1</h3>
+            <p class="description">This is product 1 description</p>
+            <span class="price">$10.99</span>
+        </div>
+        <div class="card product">
+            <h3>Product 2</h3>
+            <p class="description">This is product 2 description</p>
+            <span class="price">$15.49</span>
+        </div>
+        <div class="card product">
+            <h3>Product 3</h3>
+            <p class="description">This is product 3 description</p>
+            <span class="price">$8.75</span>
+        </div>
+    </div>
+
+    <!-- Multiple buttons -->
+    <div id="buttons-container">
+        <h2>Action Buttons</h2>
+        <button class="action-btn" data-action="save">Save</button>
+        <button class="action-btn" data-action="cancel">Cancel</button>
+        <button class="action-btn" data-action="delete">Delete</button>
+        <button class="action-btn" data-action="submit">Submit</button>
+    </div>
+
+    <!-- Items with same tag but different content -->
+    <div id="paragraphs-container">
+        <h2>Information Paragraphs</h2>
+        <p class="info-text">First paragraph with some information</p>
+        <p class="info-text">Second paragraph with different content</p>
+        <p class="info-text">Third paragraph explaining something else</p>
+    </div>
+
+    <!-- Links with same class -->
+    <div id="links-container">
+        <h2>Navigation Links</h2>
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#about" class="nav-link">About</a>
+        <a href="#contact" class="nav-link">Contact</a>
+        <a href="#services" class="nav-link">Services</a>
+    </div>
+
+    <!-- Mixed content with data attributes -->
+    <div id="data-container">
+        <h2>Data Items</h2>
+        <div class="item" data-type="user">User Item 1</div>
+        <div class="item" data-type="user">User Item 2</div>
+        <div class="item" data-type="admin">Admin Item 1</div>
+        <div class="item" data-type="user">User Item 3</div>
+        <div class="item" data-type="guest">Guest Item 1</div>
+    </div>
+
+    <!-- Empty container for testing no matches -->
+    <div id="empty-container">
+        <h2>Empty Container</h2>
+        <!-- No elements with class "nonexistent" here -->
+    </div>
+</body>
+</html>

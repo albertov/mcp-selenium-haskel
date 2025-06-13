@@ -171,7 +171,8 @@ class TestMouseKeyboardActions:
         tools = await browser.list_tools()
 
         if "hover" in tools:
-            result = await browser.hover("id", "nonexistent-element", timeout=1)
+            # Use short timeout since we expect no matches
+            result = await browser.hover("id", "nonexistent-element", timeout=0.2)
             assert ("error" in result or
                     "not found" in result.get("text", "").lower() or
                     "element not found" in result.get("text", "").lower() or
