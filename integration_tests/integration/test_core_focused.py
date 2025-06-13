@@ -114,8 +114,8 @@ class TestCoreFunctionality:
         url = f"{test_server.base_url}/test_page.html"
         await browser.navigate(url)
 
-        # Test with short timeout to fail quickly
-        result = await browser.find_element("id", "definitely-does-not-exist", timeout=1)
+        # Test with short timeout to fail quickly since we expect no matches
+        result = await browser.find_element("id", "definitely-does-not-exist", timeout=0.2)
         assert ("error" in result or
                 "not found" in result.get("text", "").lower() or
                 "element" in result.get("text", "").lower())

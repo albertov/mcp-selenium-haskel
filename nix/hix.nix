@@ -24,5 +24,7 @@ rec {
       pytest
       pytest-asyncio
       mcp
+      git
+      coreutils
     ];
 }

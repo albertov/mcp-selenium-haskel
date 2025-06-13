@@ -84,9 +84,11 @@ module MCP.Selenium.WebDriver
 
     -- * Element Operations
     findElementByLocator,
+    findElementsByLocator,
     clickElement,
     sendKeysToElement,
     getElementText,
+    getElementsText,
 
     -- * Advanced Actions
     hoverElement,
@@ -290,6 +292,21 @@ getElementText (SeleniumSession _ session) locator timeoutMs = do
     WD.setImplicitWait (fromIntegral timeoutMs)
     element <- WD.findElem (locatorToBy locator)
     WD.getText element
+
+-- | Find multiple elements by locator strategy
+findElementsByLocator :: SeleniumSession -> LocatorStrategy -> Int -> IO [WD.Element]
+findElementsByLocator (SeleniumSession _ session) locator timeoutMs = do
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    WD.findElems (locatorToBy locator)
+
+-- | Get text content of multiple elements
+getElementsText :: SeleniumSession -> LocatorStrategy -> Int -> IO [T.Text]
+getElementsText (SeleniumSession _ session) locator timeoutMs = do
+  WD.runWD session $ do
+    WD.setImplicitWait (fromIntegral timeoutMs)
+    elements <- WD.findElems (locatorToBy locator)
+    mapM WD.getText elements
 
 -- | Hover over an element
 hoverElement :: SeleniumSession -> LocatorStrategy -> Int -> IO ()

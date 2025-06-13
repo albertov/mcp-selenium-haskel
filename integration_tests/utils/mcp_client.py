@@ -70,8 +70,8 @@ class MCPSeleniumClient:
         """Call a tool and return the result"""
         # For tools that require session_id, add it automatically if not present
         session_required_tools = {
-            "navigate", "find_element", "click_element", "send_keys", "get_element_text",
-            "hover", "drag_and_drop", "double_click", "right_click", "press_key",
+            "navigate", "find_element", "find_elements", "click_element", "send_keys", "get_element_text",
+            "get_elements_text", "hover", "drag_and_drop", "double_click", "right_click", "press_key",
             "upload_file", "take_screenshot", "close_browser", "get_console_logs",
             "get_available_log_types", "inject_console_logger", "get_injected_console_logs",
             "get_source"
@@ -123,6 +123,14 @@ class MCPSeleniumClient:
     async def find_element(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
         """Find element on page"""
         return await self.call_tool("find_element", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000  # Convert to milliseconds
+        })
+
+    async def find_elements(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Find multiple elements on page"""
+        return await self.call_tool("find_elements", {
             "by": by,
             "value": value,
             "timeout": timeout * 1000 if timeout else 10000  # Convert to milliseconds
@@ -219,6 +227,14 @@ class MCPSeleniumClient:
     async def get_element_text(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
         """Get text content of an element"""
         return await self.call_tool("get_element_text", {
+            "by": by,
+            "value": value,
+            "timeout": timeout * 1000 if timeout else 10000
+        })
+
+    async def get_elements_text(self, by: str, value: str, timeout: Optional[int] = 10) -> Dict[str, Any]:
+        """Get text content of multiple elements"""
+        return await self.call_tool("get_elements_text", {
             "by": by,
             "value": value,
             "timeout": timeout * 1000 if timeout else 10000

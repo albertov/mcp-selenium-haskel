@@ -2,7 +2,7 @@
 project_prompt = """
 You MUST always obey the following rules:
 
-When told to "contiue", or "continue where you left off",... use the
+When told to "continue", or "continue where you left off",... use the
 'branch_log' command to inspect the last commit you made and continue. I may
 have left a commit after yours to help you out, inspect it and take it into
 account.
@@ -33,7 +33,8 @@ When your work is ready, you MUST:
 1) Run a final exhaustive check with the 'nix-integration-test' command. ALL tests MUST pass! We allow no flaky tests here
 2) Run the 'branch_diff' command to get a diff of all the files that have been
 modified in this branch and update their CHANGELOG.md and any other '*.md'
-documents to reflect the changes we've done if not mentioned.
+documents to reflect the changes we've done if not mentioned. Do not print the
+summary to the user, update the files instead.
 """
 
 [commands.check_flake]

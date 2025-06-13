@@ -25,7 +25,8 @@ class TestElementInteraction:
         url = f"{test_server.base_url}/test_page.html"
         await browser.navigate(url)
 
-        result = await browser.find_element("id", "nonexistent", 1)
+        # Use short timeout since we expect no matches
+        result = await browser.find_element("id", "nonexistent", 0.2)
 
         # The server should return an error for non-existent elements
         assert "error" in result or "Element not found" in result.get("text", "")
