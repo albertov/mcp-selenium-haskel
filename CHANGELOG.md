@@ -8,18 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - 2025-6-13
 
 ### Added
+- `execute_js` tool for executing JavaScript code in the browser with support for:
+  - JavaScript code execution in browser context
+  - Optional arguments passing to JavaScript functions
+  - Configurable execution timeout (default: 30 seconds)
+  - Proper handling of different return types (strings, numbers, objects, arrays, null, undefined)
+  - Structured JSON response format with `{"text": "result"}` format
+  - DOM manipulation and page interaction capabilities
+  - Comprehensive security documentation and usage examples
 - `find_elements` tool for finding multiple elements on a page using locator strategies
 - `get_elements_text` tool for retrieving text content from multiple elements
 - Support for finding multiple elements with all existing locator strategies (id, css, xpath, name, tag, class)
 - JSON response format for multiple elements with element count and element IDs/texts
 - Comprehensive integration test suite for multiple element functionality
+- Comprehensive integration test suite for JavaScript execution functionality with 13 test cases
 - New HTML test fixture (`multi_elements_page.html`) for testing multiple element scenarios
-- Enhanced MCP client with `find_elements` and `get_elements_text` methods
+- Enhanced MCP client with `find_elements`, `get_elements_text`, and `execute_js` methods
 
 ### Changed
-- Updated MCP server to register and handle the new multiple element tools
-- Extended WebDriver module with `findElementsByLocator` and `getElementsText` functions
-- Enhanced tool parameter types with `FindElementsParams` and `GetElementsTextParams`
+- Updated MCP server to register and handle the new multiple element tools and execute_js tool
+- Extended WebDriver module with `findElementsByLocator`, `getElementsText`, and `executeJavaScript` functions
+- Enhanced tool parameter types with `FindElementsParams`, `GetElementsTextParams`, and `ExecuteJSParams`
+- Updated API documentation with comprehensive JavaScript execution section including security considerations
 
 ### Improved
 - Reduced timeout to 0.2 seconds for integration tests that expect no element matches, improving test performance by ~20 seconds

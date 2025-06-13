@@ -848,7 +848,10 @@ handleExecuteJS tools (ExecuteJSParams sessionId scriptText argsText timeoutVal)
                 jsArgs = fromMaybe [] argsText
             result <- executeJavaScript (seleniumSession sessionData) scriptText jsArgs timeoutMs
             debugLog "HANDLER: JavaScript executed successfully"
-            return $ successResult result
+            -- Create structured response with text field
+            let responseJson = object ["text" .= result]
+                responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
         )
         ( \e -> do
             debugLog ("HANDLER: Exception in execute_js: " ++ show (e :: SomeException))

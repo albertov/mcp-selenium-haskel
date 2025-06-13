@@ -95,7 +95,7 @@ class TestExecuteJS:
     async def test_execute_js_without_browser(self, mcp_client: MCPSeleniumClient):
         """Test execute_js tool without starting a browser."""
         result = await mcp_client.call_tool("execute_js", {
-            "session_id": "non-existent-session",
+            "session_id": "00000000-0000-0000-0000-000000000000",
             "script": "return 'test';"
         })
 
@@ -124,13 +124,21 @@ class TestExecuteJS:
     @pytest.mark.asyncio
     async def test_execute_js_dom_manipulation(self, browser: MCPSeleniumClient):
         """Test executing JavaScript that manipulates the DOM."""
-        # Navigate to a simple page
-        html_content = "<html><body><div id='test'>Original</div></body></html>"
-        url = f"data:text/html,{html_content}"
-        await browser.navigate(url)
+        # Navigate to about:blank and create element dynamically
+        await browser.navigate("about:blank")
 
-        # Change the content and return it
-        script = "document.getElementById('test').textContent = 'Modified'; return document.getElementById('test').textContent;"
+        # Create element, modify it, and return the result
+        script = """
+        // Create a test element
+        var element = document.createElement('div');
+        element.id = 'test';
+        element.textContent = 'Original';
+        document.body.appendChild(element);
+
+        // Now modify it
+        element.textContent = 'Modified';
+        return element.textContent;
+        """
         result = await browser.execute_js(script)
 
         assert "error" not in result, f"JavaScript execution failed: {result}"
@@ -138,6 +146,14 @@ class TestExecuteJS:
 
         # Verify the change persisted
         result2 = await browser.execute_js("return document.getElementById('test').textContent;")
+        assert "error" not in result2, f"JavaScript execution failed: {result2}"
+        assert result2["text"] == "Modified", f"Expected 'Modified', got '{result2['text']}'"
+
+        # Verify the change persisted
+        result2 = await browser.execute_js("""
+        var element = document.getElementById('test');
+        return element ? element.textContent : 'Element not found';
+        """)
 
         assert "error" not in result2, f"JavaScript execution failed: {result2}"
         assert result2["text"] == "Modified", f"Expected 'Modified', got '{result2['text']}'"

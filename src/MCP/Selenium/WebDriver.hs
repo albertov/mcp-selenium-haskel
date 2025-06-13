@@ -116,7 +116,7 @@ module MCP.Selenium.WebDriver
 where
 
 import Control.Exception (Exception)
-import Data.Aeson (Value, FromJSON, ToJSON, parseJSON, toJSON)
+import Data.Aeson (FromJSON, ToJSON, Value, parseJSON, toJSON)
 import Data.Aeson.QQ (aesonQQ)
 import Data.Aeson.Types (Parser)
 import qualified Data.ByteString as BS
@@ -493,7 +493,7 @@ executeJavaScript (SeleniumSession _ session) script args timeoutMs = do
     -- Convert string arguments to JSArg format and build argument passing code
     let jsArgs = map WD.JSArg args
         -- Create a function wrapper that accepts arguments and executes the user script
-        -- Also convert the result to a JSON string for consistent return type
+        -- Handle the result based on its type to avoid double-quoting strings
         wrappedScript =
           "var userArgs = Array.prototype.slice.call(arguments);\
           \var result = (function() {\
@@ -501,7 +501,11 @@ executeJavaScript (SeleniumSession _ session) script args timeoutMs = do
             <> script
             <> "\
                \}).apply(this, userArgs);\
-               \return JSON.stringify(result);"
+               \if (typeof result === 'string') {\
+               \  return result;\
+               \} else {\
+               \  return JSON.stringify(result);\
+               \}"
     (jsResult :: Maybe T.Text) <- executeJS jsArgs wrappedScript
     return jsResult
   case result of
