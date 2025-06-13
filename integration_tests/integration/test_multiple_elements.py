@@ -211,8 +211,11 @@ class TestMultipleElements:
         # Create client without using browser fixture
         from utils.mcp_client import MCPSeleniumClient
         import os
+        from pathlib import Path
 
-        executable_path = os.environ.get("MCP_SELENIUM_EXECUTABLE", "/home/alberto/src/mcp-selenium-haskell/run_server.sh")
+        # Use same path determination logic as conftest.py
+        project_root = Path(__file__).parent.parent.parent
+        executable_path = os.environ.get('MCP_SELENIUM_EXE', str(project_root / "run_server.sh"))
 
         async with MCPSeleniumClient(executable_path) as client:
             # Don't start browser - should fail
@@ -227,8 +230,11 @@ class TestMultipleElements:
         # Create client without using browser fixture
         from utils.mcp_client import MCPSeleniumClient
         import os
+        from pathlib import Path
 
-        executable_path = os.environ.get("MCP_SELENIUM_EXECUTABLE", "/home/alberto/src/mcp-selenium-haskell/run_server.sh")
+        # Use same path determination logic as conftest.py
+        project_root = Path(__file__).parent.parent.parent
+        executable_path = os.environ.get('MCP_SELENIUM_EXE', str(project_root / "run_server.sh"))
 
         async with MCPSeleniumClient(executable_path) as client:
             # Don't start browser - should fail
