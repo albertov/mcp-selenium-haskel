@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from utils.mcp_client import MCPSeleniumClient
 
@@ -21,12 +22,16 @@ class TestMouseKeyboardActions:
 
         assert "error" not in result
 
-        # Verify hover action was detected by checking the result log
-        log_result = await browser.get_element_text("id", "result-log")
-
-        assert "error" not in log_result
-        log_text = log_result.get("text", "").lower()
-        assert "hover action detected" in log_text
+        # Wait up to 2 seconds for log to update
+        for _ in range(20):
+            log_result = await browser.get_element_text("id", "result-log")
+            assert "error" not in log_result
+            log_text = log_result.get("text", "").lower()
+            if "hover action detected" in log_text:
+                break
+            await asyncio.sleep(0.1)
+        else:
+            assert False, f"hover action not detected in log: {log_text}"
 
     @pytest.mark.asyncio
     async def test_double_click_action(self, browser: MCPSeleniumClient, test_server):
@@ -43,12 +48,16 @@ class TestMouseKeyboardActions:
 
         assert "error" not in result
 
-        # Verify double click action was detected
-        log_result = await browser.get_element_text("id", "result-log")
-
-        assert "error" not in log_result
-        log_text = log_result.get("text", "").lower()
-        assert "double-click action detected" in log_text
+        # Wait up to 2 seconds for log to update
+        for _ in range(20):
+            log_result = await browser.get_element_text("id", "result-log")
+            assert "error" not in log_result
+            log_text = log_result.get("text", "").lower()
+            if "double-click action detected" in log_text:
+                break
+            await asyncio.sleep(0.1)
+        else:
+            assert False, f"double-click action not detected in log: {log_text}"
 
     @pytest.mark.asyncio
     async def test_right_click_action(self, browser: MCPSeleniumClient, test_server):
@@ -65,12 +74,16 @@ class TestMouseKeyboardActions:
 
         assert "error" not in result
 
-        # Verify right click action was detected
-        log_result = await browser.get_element_text("id", "result-log")
-
-        assert "error" not in log_result
-        log_text = log_result.get("text", "").lower()
-        assert "right-click action detected" in log_text
+        # Wait up to 2 seconds for log to update
+        for _ in range(20):
+            log_result = await browser.get_element_text("id", "result-log")
+            assert "error" not in log_result
+            log_text = log_result.get("text", "").lower()
+            if "right-click action detected" in log_text:
+                break
+            await asyncio.sleep(0.1)
+        else:
+            assert False, f"right-click action not detected in log: {log_text}"
 
     @pytest.mark.asyncio
     async def test_press_key_action(self, browser: MCPSeleniumClient, test_server):
@@ -90,16 +103,16 @@ class TestMouseKeyboardActions:
 
         assert "error" not in result
 
-        # Add a small delay to allow JavaScript to process the event
-        import asyncio
-        await asyncio.sleep(0.1)
-
-        # Verify key press was detected
-        log_result = await browser.get_element_text("id", "result-log")
-
-        assert "error" not in log_result
-        log_text = log_result.get("text", "").lower()
-        assert "key-enter" in log_text
+        # Wait up to 2 seconds for log to update
+        for _ in range(20):
+            log_result = await browser.get_element_text("id", "result-log")
+            assert "error" not in log_result
+            log_text = log_result.get("text", "").lower()
+            if "key-enter" in log_text:
+                break
+            await asyncio.sleep(0.1)
+        else:
+            assert False, f"key-enter not detected in log: {log_text}"
 
     @pytest.mark.asyncio
     async def test_press_key_tab(self, browser: MCPSeleniumClient, test_server):
@@ -119,16 +132,16 @@ class TestMouseKeyboardActions:
 
         assert "error" not in result
 
-        # Add a small delay to allow JavaScript to process the event
-        import asyncio
-        await asyncio.sleep(0.1)
-
-        # Verify tab key press was detected
-        log_result = await browser.get_element_text("id", "result-log")
-
-        assert "error" not in log_result
-        log_text = log_result.get("text", "").lower()
-        assert "key-tab" in log_text
+        # Wait up to 2 seconds for log to update
+        for _ in range(20):
+            log_result = await browser.get_element_text("id", "result-log")
+            assert "error" not in log_result
+            log_text = log_result.get("text", "").lower()
+            if "key-tab" in log_text:
+                break
+            await asyncio.sleep(0.1)
+        else:
+            assert False, f"key-tab not detected in log: {log_text}"
 
     @pytest.mark.asyncio
     async def test_drag_and_drop(self, browser: MCPSeleniumClient, test_server):
@@ -146,7 +159,6 @@ class TestMouseKeyboardActions:
         assert "error" not in result
 
         # Add a small delay to allow JavaScript to process the events
-        import asyncio
         await asyncio.sleep(0.2)
 
         # Verify drag and drop actions were detected
