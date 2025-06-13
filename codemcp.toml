@@ -118,6 +118,12 @@ When asked to lint every haskell file just call it like "lint ."
 command = ["./run_branch_changes.sh"]
 doc = "Show a diff of the changes in this branch against base branch"
 
+[commands.git_tag]
+command = ["git", "tag"]
+doc = """
+Run git tag to create or list tags. Don't you dare delete them.
+"""
+
 [commands.branch_log]
 command = ["./run_branch_log.sh"]
 doc = "Show the log messages of the changes done in this branch"
