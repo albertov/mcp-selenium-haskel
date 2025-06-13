@@ -7,7 +7,7 @@ trap "git config --global --unset core.hooksPath" EXIT
 # confused robots.
 git config --global core.hooksPath /dev/null
 # Always bind to an interface that is NOT, NOT, NOT exposed to the internet.
-cd $REPO_ROOT
+cd "$REPO_ROOT"
 mcp-proxy \
   --port 8000 \
   --host localhost \

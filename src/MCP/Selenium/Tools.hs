@@ -677,6 +677,9 @@ handleUploadFile tools (UploadFileParams sessionId byVal valueVal filePathVal ti
         (\e -> return $ errorResult $ "Upload file failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle take_screenshot tool
+-- Note: Returns base64 image data as TextualContent due to hs-mcp library limitations.
+-- The library's ImageContent type doesn't properly support the data/mimeType fields
+-- expected by the MCP protocol. This should be updated when hs-mcp supports proper ImageContent.
 handleTakeScreenshot :: SeleniumTools -> TakeScreenshotParams -> IO CallToolResult
 handleTakeScreenshot tools (TakeScreenshotParams sessionId) = do
   sessionMaybe <- lookupSession tools sessionId
@@ -685,8 +688,8 @@ handleTakeScreenshot tools (TakeScreenshotParams sessionId) = do
     Just sessionData ->
       catch
         ( do
-            result <- takeScreenshot (seleniumSession sessionData) Nothing
-            return $ successResult $ "Screenshot captured: " <> result
+            imageData <- takeScreenshot (seleniumSession sessionData) Nothing
+            return $ successResult imageData
         )
         (\e -> return $ errorResult $ "Screenshot failed: " <> T.pack (show (e :: SomeException)))
 

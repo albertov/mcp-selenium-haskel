@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced MCP client with `find_elements`, `get_elements_text`, and `execute_js` methods
 
 ### Changed
+- **Enhanced `take_screenshot` tool** to return base64 image data directly instead of descriptive message
+  - Now returns raw base64 PNG data for immediate use by clients
+  - Documented limitation with current hs-mcp library's simplified ImageContent support
+  - Improved usability for screenshot functionality
 - Updated MCP server to register and handle the new multiple element tools and execute_js tool
 - Extended WebDriver module with `findElementsByLocator`, `getElementsText`, and `executeJavaScript` functions
 - Enhanced tool parameter types with `FindElementsParams`, `GetElementsTextParams`, and `ExecuteJSParams`
