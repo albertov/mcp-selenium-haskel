@@ -11,7 +11,7 @@
     flags = {};
     package = {
       specVersion = "3.0";
-      identifier = { name = "mcp-selenium"; version = "0.1.0"; };
+      identifier = { name = "mcp-selenium"; version = "0.2.0"; };
       license = "BSD-3-Clause";
       copyright = "";
       maintainer = "alberto@toscat.net";
