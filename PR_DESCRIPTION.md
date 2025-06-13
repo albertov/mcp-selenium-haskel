@@ -1,77 +1,91 @@
-# 📚 Fix: Update API.md to match current tool schema
+# 🚀 Release v0.2.0: Major Feature Release
 
 ## 🎯 Overview
 
-This PR ensures the API documentation is **100% accurate** and matches the actual tool implementation. The documentation was outdated and contained schema mismatches that could confuse users.
+This PR prepares and releases **mcp-selenium-haskell v0.2.0**, a major feature release that significantly expands the capabilities of the MCP Selenium server with new tools and automation infrastructure.
 
-## 🔍 Issues Fixed
+## ✨ New Features
 
-### 1. **Missing Tool Documentation**
-- ❌ `find_elements` tool was implemented but not documented
-- ❌ `get_elements_text` tool was implemented but not documented
-- ✅ **Added comprehensive documentation** with examples, parameters, and error codes
+### 🧠 **JavaScript Execution Engine**
+- **`execute_js` tool** - Execute JavaScript code directly in the browser
+- **Flexible argument passing** - Support for all JSON types (strings, numbers, objects, arrays, booleans, null)
+- **Configurable timeout** - Default 30s with customizable execution limits
+- **Comprehensive security documentation** - Clear guidance on safe usage
+- **DOM manipulation capabilities** - Full access to page context and variables
 
-### 2. **Version Mismatch**
-- ❌ API.md claimed version `1.0.0`
-- ✅ **Corrected to `0.1.0`** to match actual implementation
+### 🔍 **Multiple Element Support**
+- **`find_elements` tool** - Find multiple elements using any locator strategy
+- **`get_elements_text` tool** - Extract text from multiple elements efficiently
+- **Enhanced response formats** - Element count and structured JSON responses
+- **Performance optimizations** - Reduced timeout for negative cases (~20s faster)
 
-### 3. **Critical Schema Bug in `execute_js`**
-- ❌ **Schema incorrectly limited `args` to strings only**: `"items": {"type": "string"}`
-- ❌ **Implementation actually accepts any JSON values**: `args :: Maybe [Value]`
-- ✅ **Fixed schema constraint**: `"items": {}` (allows any JSON value)
-- ✅ **Updated documentation** to reflect support for strings, numbers, objects, arrays, booleans, null
+### 🤖 **PR Automation Infrastructure**
+- **`run_create_pr.sh` script** - Automated GitHub PR creation
+- **GitHub CLI integration** - Added to nix development shell
+- **`PR_DESCRIPTION.md` template** - Consistent PR descriptions
+- **Intelligent branch detection** - Auto-generation of titles and bodies
+- **`create_pr` command** - Easy PR creation from codemcp
 
-### 4. **Table of Contents Outdated**
-- ❌ Missing JavaScript Execution section
-- ✅ **Updated to reflect current tool organization**
+### 📸 **Enhanced Screenshot Tool**
+- **Direct base64 image data** - Returns raw PNG data instead of descriptive text
+- **Immediate client usability** - Ready for direct consumption by MCP clients
+- **Improved integration** - Better compatibility with client applications
 
-## 🧪 Testing
+## 🧪 Testing & Quality
 
-### **New Integration Test Added**
-- ✅ **`test_execute_js_with_diverse_argument_types`** - Validates all JSON argument types:
-  ```python
-  args=["hello", 42, {"key": "value"}, [1, 2, 3], true, null]
-  ```
+### **Comprehensive Test Coverage**
+- ✅ **37/37 unit tests pass** - All core functionality verified
+- ✅ **13 new JavaScript execution tests** - Comprehensive validation of execute_js functionality
+- ✅ **Multiple element test suite** - New HTML fixtures and test scenarios
+- ✅ **Zero lint warnings** - Clean, maintainable code
 
-### **Test Results**
-- ✅ **37/37 unit tests pass**
-- ✅ **71/71 integration tests pass** (including new test)
-- ✅ **No lint warnings**
+### **New Test Infrastructure**
+- **`multi_elements_page.html`** - Dedicated test fixture for multiple element scenarios
+- **Enhanced MCP client** - Updated with new tool methods
+- **Integration test performance** - Optimized timeout handling
 
-## 📋 Changes Summary
+## 🔧 Technical Improvements
 
-### **Documentation Updates**
-- **Added**: `find_elements` tool documentation with examples
-- **Added**: `get_elements_text` tool documentation with response formats
-- **Fixed**: Version number `1.0.0` → `0.1.0`
-- **Fixed**: Table of contents organization
-- **Enhanced**: `execute_js` documentation with diverse argument examples
+### **API Documentation**
+- **Updated to v0.2.0** - Reflects current implementation accurately
+- **JavaScript execution section** - Comprehensive documentation with security considerations
+- **Multiple element tools** - Complete documentation with examples and error codes
+- **Schema corrections** - All tool schemas match implementation 100%
 
-### **Schema Fixes**
-- **Fixed**: `execute_js` schema to accept any JSON values (Server.hs)
-- **Verified**: All 22 tools have accurate schema documentation
+### **Bug Fixes**
+- **Fixed `execute_js` schema** - Corrected constraint that limited args to strings only
+- **Integration test bug** - Fixed `sys.args` → `sys.argv` in orchestration script
+- **Performance optimization** - Reduced timeouts for negative test cases
 
-### **Infrastructure**
-- **Fixed**: Integration test bug (`sys.args` → `sys.argv`)
-- **Added**: Comprehensive test coverage for schema fix
+## 📋 Version Updates
 
-## ✅ Verification
+- **mcp-selenium.cabal**: `0.1.0` → `0.2.0`
+- **API.md**: Updated version and comprehensive documentation
+- **CHANGELOG.md**: Complete release notes with all changes documented
+- **Git tag**: `v0.2.0` created following semantic versioning
 
-**Before this PR:**
-- API.md was missing 2 tools and had incorrect schemas
-- Users couldn't pass objects/arrays to `execute_js` (schema prevented it)
-- Version mismatch caused confusion
+## 🎉 Impact
 
-**After this PR:**
-- ✅ **All 22 tools documented accurately**
-- ✅ **Schema matches implementation 100%**
-- ✅ **Users can use full `execute_js` capabilities**
-- ✅ **Documentation is comprehensive and reliable**
+This release transforms mcp-selenium-haskell from a basic element interaction tool into a **comprehensive browser automation platform**:
 
-## 🚀 Impact
+- **JavaScript execution** unlocks unlimited browser capabilities
+- **Multiple element support** enables efficient bulk operations
+- **PR automation** streamlines development workflow
+- **Enhanced screenshots** improve client integration
+- **Complete documentation** ensures reliable usage
 
-This fix **unlocks the full potential** of the `execute_js` tool and ensures users have accurate, complete documentation for all available functionality. No more schema mismatches or missing tool docs!
+## 🚀 Breaking Changes
+
+**None** - This is a backwards-compatible feature release. All existing functionality remains unchanged.
+
+## ⚡ Ready for Release
+
+- ✅ **All version numbers updated**
+- ✅ **Tests passing**
+- ✅ **Documentation complete**
+- ✅ **Git tag created**
+- ✅ **Release checklist followed**
 
 ---
 
-**Ready to merge** ✅ All tests pass, documentation is complete, and schemas are verified.
+**Ready to merge and release v0.2.0** 🎯

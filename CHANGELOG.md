@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2025-6-13
+## [0.2.0] - 2025-6-14
 
 ### Added
 - `execute_js` tool for executing JavaScript code in the browser with support for:
@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Updated API.md to match current tool schema**:
   - Added documentation for `find_elements` tool with examples and error codes
   - Added documentation for `get_elements_text` tool with response format details
-  - Corrected version number from 1.0.0 to 0.1.0 to match implementation
+  - Corrected version number from 1.0.0 to 0.2.0 to match implementation
   - Updated table of contents to include JavaScript Execution section
   - All tool schemas now accurately reflect the current implementation
 

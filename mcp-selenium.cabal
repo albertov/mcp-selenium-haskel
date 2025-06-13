@@ -1,6 +1,6 @@
 cabal-version: 3.0
 name: mcp-selenium
-version: 0.1.0
+version: 0.2.0
 synopsis: A Haskell implementation of MCP Selenium Server using WebDriver
 description:
   A Model Context Protocol (MCP) server implementation for Selenium WebDriver in Haskell,
