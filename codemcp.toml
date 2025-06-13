@@ -2,7 +2,7 @@
 project_prompt = """
 You MUST always obey the following rules:
 
-When told to "contiue", or "continue where you left off",... use the
+When told to "continue", or "continue where you left off",... use the
 'branch_log' command to inspect the last commit you made and continue. I may
 have left a commit after yours to help you out, inspect it and take it into
 account.

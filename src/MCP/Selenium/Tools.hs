@@ -79,9 +79,11 @@ module MCP.Selenium.Tools
     StartBrowserParams (..),
     NavigateParams (..),
     FindElementParams (..),
+    FindElementsParams (..),
     ClickElementParams (..),
     SendKeysParams (..),
     GetElementTextParams (..),
+    GetElementsTextParams (..),
     HoverParams (..),
     DragAndDropParams (..),
     DoubleClickParams (..),
@@ -107,9 +109,11 @@ module MCP.Selenium.Tools
     handleStartBrowser,
     handleNavigate,
     handleFindElement,
+    handleFindElements,
     handleClickElement,
     handleSendKeys,
     handleGetElementText,
+    handleGetElementsText,
     handleHover,
     handleDragAndDrop,
     handleDoubleClick,
@@ -216,6 +220,14 @@ data FindElementParams = FindElementParams
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
+data FindElementsParams = FindElementsParams
+  { session_id :: SessionId,
+    by :: Maybe T.Text,
+    value :: T.Text,
+    timeout :: Maybe Int
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
 data ClickElementParams = ClickElementParams
   { session_id :: SessionId,
     by :: T.Text,
@@ -234,6 +246,14 @@ data SendKeysParams = SendKeysParams
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data GetElementTextParams = GetElementTextParams
+  { session_id :: SessionId,
+    by :: T.Text,
+    value :: T.Text,
+    timeout :: Maybe Int
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+data GetElementsTextParams = GetElementsTextParams
   { session_id :: SessionId,
     by :: T.Text,
     value :: T.Text,
@@ -440,6 +460,32 @@ handleFindElement tools (FindElementParams sessId byVal valueVal timeoutVal) = d
             return $ errorResult $ "Element not found: " <> T.pack (show (e :: SomeException))
         )
 
+-- | Handle find_elements tool
+handleFindElements :: SeleniumTools -> FindElementsParams -> IO CallToolResult
+handleFindElements tools (FindElementsParams sessId byVal valueVal timeoutVal) = do
+  debugLog "HANDLER: find_elements called"
+  sessionMaybe <- lookupSession tools sessId
+  case sessionMaybe of
+    Nothing -> do
+      debugLog "HANDLER: Session not found in find_elements"
+      return $ errorResult "Session not found"
+    Just sessionData -> do
+      catch
+        ( do
+            let byStrategy = fromMaybe "id" byVal -- default to "id" if not provided
+                locator = parseLocatorStrategy byStrategy valueVal
+                timeoutMs = fromMaybe 10000 timeoutVal
+            elements <- findElementsByLocator (seleniumSession sessionData) locator timeoutMs
+            -- Return elements information with proper JSON encoding
+            let elementIds = map (T.pack . show) elements
+                responseJson = object [("elementIds", toJSON elementIds), ("count", toJSON (length elements))]
+                responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+        )
+        ( \e -> do
+            return $ errorResult $ "Elements not found: " <> T.pack (show (e :: SomeException))
+        )
+
 -- | Handle click_element tool
 handleClickElement :: SeleniumTools -> ClickElementParams -> IO CallToolResult
 handleClickElement tools (ClickElementParams sessionId byVal valueVal timeoutVal) = do
@@ -487,6 +533,25 @@ handleGetElementText tools (GetElementTextParams sessionId byVal valueVal timeou
             return $ successResult elementText
         )
         (\e -> return $ errorResult $ "Get text failed: " <> T.pack (show (e :: SomeException)))
+
+-- | Handle get_elements_text tool
+handleGetElementsText :: SeleniumTools -> GetElementsTextParams -> IO CallToolResult
+handleGetElementsText tools (GetElementsTextParams sessionId byVal valueVal timeoutVal) = do
+  sessionMaybe <- lookupSession tools sessionId
+  case sessionMaybe of
+    Nothing -> return $ errorResult "Session not found"
+    Just sessionData ->
+      catch
+        ( do
+            let locator = parseLocatorStrategy byVal valueVal
+                timeoutMs = fromMaybe 10000 timeoutVal
+            elementsText <- getElementsText (seleniumSession sessionData) locator timeoutMs
+            -- Return texts as JSON array with count
+            let responseJson = object [("texts", toJSON elementsText), ("count", toJSON (length elementsText))]
+                responseText = TE.decodeUtf8 $ BSL.toStrict $ encode responseJson
+            return $ CallToolResult [ToolContent TextualContent (Just responseText)] False
+        )
+        (\e -> return $ errorResult $ "Get elements text failed: " <> T.pack (show (e :: SomeException)))
 
 -- | Handle hover tool
 handleHover :: SeleniumTools -> HoverParams -> IO CallToolResult

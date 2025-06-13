@@ -109,9 +109,11 @@ createSeleniumServer = do
         [ startBrowserTool,
           navigateTool,
           findElementTool,
+          findElementsTool,
           clickElementTool,
           sendKeysTool,
           getElementTextTool,
+          getElementsTextTool,
           hoverTool,
           dragAndDropTool,
           doubleClickTool,
@@ -144,9 +146,11 @@ createHandler tools request = do
     "start_browser" -> parseAndHandle handleStartBrowser
     "navigate" -> parseAndHandle handleNavigate
     "find_element" -> parseAndHandle handleFindElement
+    "find_elements" -> parseAndHandle handleFindElements
     "click_element" -> parseAndHandle handleClickElement
     "send_keys" -> parseAndHandle handleSendKeys
     "get_element_text" -> parseAndHandle handleGetElementText
+    "get_elements_text" -> parseAndHandle handleGetElementsText
     "hover" -> parseAndHandle handleHover
     "drag_and_drop" -> parseAndHandle handleDragAndDrop
     "double_click" -> parseAndHandle handleDoubleClick
@@ -266,6 +270,38 @@ findElementTool =
       }|]
     }
 
+findElementsTool :: Tool
+findElementsTool =
+  Tool
+    { toolName = "find_elements",
+      toolDescription = Just "Finds multiple elements on the page",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"],
+            "description": "Locator strategy"
+          },
+          "value": {
+            "type": "string",
+            "description": "Value for the locator strategy"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Maximum time to wait for elements in milliseconds",
+            "default": 10000
+          }
+        },
+        "required": ["session_id", "value"]
+      }|]
+    }
+
 clickElementTool :: Tool
 clickElementTool =
   Tool
@@ -333,6 +369,35 @@ getElementTextTool =
   Tool
     { toolName = "get_element_text",
       toolDescription = Just "Gets the text content of an element",
+      toolInputSchema =
+        [aesonQQ|{
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID returned from start_browser"
+          },
+          "by": {
+            "type": "string",
+            "enum": ["id", "css", "xpath", "name", "tag", "class"]
+          },
+          "value": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number",
+            "default": 10000
+          }
+        },
+        "required": ["session_id", "by", "value"]
+      }|]
+    }
+
+getElementsTextTool :: Tool
+getElementsTextTool =
+  Tool
+    { toolName = "get_elements_text",
+      toolDescription = Just "Gets the text content of multiple elements",
       toolInputSchema =
         [aesonQQ|{
         "type": "object",
